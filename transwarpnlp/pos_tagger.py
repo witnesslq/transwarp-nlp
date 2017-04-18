@@ -17,15 +17,15 @@ import numpy as np
 import glob
 
 # adding pos submodule to sys.path, compatible with py3 absolute_import
-pkg_path = os.path.dirname(os.path.abspath(__file__)) # .../deepnlp/
-sys.path.append(pkg_path)
+# pkg_path = os.path.dirname(__file__) # .../deepnlp/
+# sys.path.append(pkg_path)
 from pos import pos_model as pos_model
+from pos.pos_model import LargeConfigChinese
 from pos import reader as pos_reader
 
 class ModelLoader(object):
     
-    def __init__(self, lang, data_path, ckpt_path):
-        self.lang = lang
+    def __init__(self, data_path, ckpt_path):
         self.data_path = data_path
         self.ckpt_path = ckpt_path  # the path of the ckpt file, e.g. ./ckpt/zh/pos.ckpt
         print("Starting new Tensorflow session...")
@@ -46,7 +46,7 @@ class ModelLoader(object):
         """Create POS Tagger model and initialize with random or load parameters in session."""
         # initilize config
         # config = POSConfig()   # Choose the config of language option
-        config = pos_model.get_config(self.lang)
+        config = LargeConfigChinese
         config.batch_size = 1
         config.num_steps = 1 # iterator one token per time
       
@@ -89,12 +89,8 @@ class ModelLoader(object):
         predict_tag = pos_reader.word_ids_to_sentence(data_path, predict_id)
         return zip(words, predict_tag)
     
-def load_model(lang = 'zh'):
-    ''' data_path e.g.: ./deepnlp/pos/data/zh
-        ckpt_path e.g.: ./deepnlp/pos/ckpt/zh/pos.ckpt
-        ckpt_file e.g.: ./deepnlp/pos/ckpt/zh/pos.ckpt.data-00000-of-00001
-    '''
-    data_path = os.path.join(pkg_path, "pos/data", lang) # POS vocabulary data path
-    ckpt_path = os.path.join(pkg_path, "pos/ckpt", lang, "pos.ckpt") # POS model checkpoint path
-    return ModelLoader(lang, data_path, ckpt_path)
+def load_model(pos_path):
+    data_path = os.path.join(pos_path, "data/pos/data") # POS vocabulary data path
+    ckpt_path = os.path.join(pos_path, "data/pos/ckpt", "ckpt") # POS model checkpoint path
+    return ModelLoader(data_path, ckpt_path)
 

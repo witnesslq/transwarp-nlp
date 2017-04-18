@@ -1,9 +1,14 @@
 #coding:utf-8
 from __future__ import unicode_literals # compatible with python3 unicode
+import sys,os
 
 from transwarpnlp import segmenter
 from transwarpnlp import pos_tagger
-tagger = pos_tagger.load_model(lang = 'zh')
+
+pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(pkg_path)
+
+tagger = pos_tagger.load_model(pkg_path)
 
 #Segmentation
 text = "我爱吃北京烤鸭"         # unicode coding, py2 and py3 compatible

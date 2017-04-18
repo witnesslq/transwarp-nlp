@@ -55,5 +55,5 @@ python pos_model_bilstm.py en # Bi-LSTM model English
 python pos_model_bilstm.py zh # Bi-LSTM model Chinese
 
 ```
-#### Trained model can be found under folder ../deepnlp/pos/ckpt/'your_language_code'
+#### Trained model can be found under folder ../transwarpnlp/pos/ckpt/'your_language_code'
 

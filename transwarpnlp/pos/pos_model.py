@@ -14,25 +14,25 @@ import numpy as np
 import tensorflow as tf
 import sys,os
 
-pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # .../deepnlp/
-sys.path.append(pkg_path)
+# pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# sys.path.append(pkg_path)
 from pos import reader # absolute import
 
 # language option python command line 'python pos_model.py en'
-lang = "zh" if len(sys.argv)==1 else sys.argv[1] # default zh
-file_path = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(file_path, "data", lang)
-train_dir = os.path.join(file_path, "ckpt", lang)
-
-flags = tf.flags
-logging = tf.logging
-
-flags.DEFINE_string("pos_lang", lang, "pos language option for model config")
-flags.DEFINE_string("pos_data_path", data_path, "data_path")
-flags.DEFINE_string("pos_train_dir", train_dir, "Training directory.")
-flags.DEFINE_string("pos_scope_name", "pos_var_scope", "Variable scope of pos Model")
-
-FLAGS = flags.FLAGS
+# lang = "zh" if len(sys.argv)==1 else sys.argv[1] # default zh
+# file_path = os.path.dirname(os.path.abspath(__file__))
+# data_path = os.path.join(file_path, "data", lang)
+# train_dir = os.path.join(file_path, "ckpt", lang)
+#
+# flags = tf.flags
+# logging = tf.logging
+#
+# flags.DEFINE_string("pos_lang", lang, "pos language option for model config")
+# flags.DEFINE_string("pos_data_path", data_path, "data_path")
+# flags.DEFINE_string("pos_train_dir", train_dir, "Training directory.")
+# flags.DEFINE_string("pos_scope_name", "pos_var_scope", "Variable scope of pos Model")
+#
+# FLAGS = flags.FLAGS
 
 def data_type():
   return tf.float32
@@ -155,35 +155,9 @@ class LargeConfigChinese(object):
   lr_decay = 1 / 1.15
   batch_size = 1 # single sample batch
   vocab_size = 50000
-  target_num = 44  # POS tagging for Chinese
+  target_num = 48  # POS tagging for Chinese
 
-class LargeConfigEnglish(object):
-  """Large config for English"""
-  init_scale = 0.04
-  learning_rate = 0.1
-  max_grad_norm = 10
-  num_layers = 2
-  num_steps = 30
-  hidden_size = 128
-  max_epoch = 5
-  max_max_epoch = 55
-  keep_prob = 1.0 # There is one dropout layer on input tensor also, don't set lower than 0.9
-  lr_decay = 1 / 1.15
-  batch_size = 1 # single sample batch
-  vocab_size = 44000
-  target_num = 81  # English: Brown Corpus tags
-
-def get_config(lang):
-  if (lang == 'zh'):
-    return LargeConfigChinese()  
-  elif (lang == 'en'):
-    return LargeConfigEnglish()
-  # other lang options
-  
-  else :
-    return None
-
-def run_epoch(session, model, word_data, tag_data, eval_op, verbose=False):
+def run_epoch(session, model, word_data, tag_data, eval_op, pos_train_dir, verbose=False):
   """Runs the model on the given data."""
   epoch_size = ((len(word_data) // model.batch_size) - 1) // model.num_steps
   start_time = time.time()
@@ -211,56 +185,56 @@ def run_epoch(session, model, word_data, tag_data, eval_op, verbose=False):
     # Save Model to CheckPoint when is_training is True
     if model.is_training:
       if step % (epoch_size // 10) == 10:
-        checkpoint_path = os.path.join(FLAGS.pos_train_dir, "pos.ckpt")
+        checkpoint_path = os.path.join(pos_train_dir, "ckpt")
         model.saver.save(session, checkpoint_path)
         print("Model Saved... at time step " + str(step))
   
   return np.exp(costs / iters)
 
-def main(_):
-  if not FLAGS.pos_data_path:
-    raise ValueError("No data files found in 'data_path' folder")
-  
-  raw_data = reader.load_data(FLAGS.pos_data_path)
-  # train_data, valid_data, test_data, _ = raw_data
-  train_word, train_tag, dev_word, dev_tag, test_word, test_tag, vocab_size = raw_data
-  
-  config = get_config(FLAGS.pos_lang)
-  eval_config = get_config(FLAGS.pos_lang)
-  eval_config.batch_size = 1
-  eval_config.num_steps = 1
-
-  with tf.Graph().as_default(), tf.Session() as session:
-    initializer = tf.random_uniform_initializer(-config.init_scale,
-                                                config.init_scale)
-    with tf.variable_scope(FLAGS.pos_scope_name, reuse=None, initializer=initializer):
-      m = POSTagger(is_training=True, config=config)
-    with tf.variable_scope(FLAGS.pos_scope_name, reuse=True, initializer=initializer):
-      mvalid = POSTagger(is_training=False, config=config)
-      mtest = POSTagger(is_training=False, config=eval_config)
-    
-    # CheckPoint State
-    ckpt = tf.train.get_checkpoint_state(FLAGS.pos_train_dir)
-    if ckpt:
-      print("Loading model parameters from %s" % ckpt.model_checkpoint_path)
-      m.saver.restore(session, tf.train.latest_checkpoint(FLAGS.pos_train_dir))
-    else:
-      print("Created model with fresh parameters.")
-      session.run(tf.global_variables_initializer())
-    
-    for i in range(config.max_max_epoch):
-      lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
-      m.assign_lr(session, config.learning_rate * lr_decay)
-
-      print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
-      train_perplexity = run_epoch(session, m, train_word, train_tag, m.train_op,
-                                   verbose=True)
-      print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-      valid_perplexity = run_epoch(session, mvalid, dev_word, dev_tag, tf.no_op())
-      print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-    
-    test_perplexity = run_epoch(session, mtest, test_word, test_tag, tf.no_op())
-    print("Test Perplexity: %.3f" % test_perplexity)
-
-if __name__ == "__main__":
-  tf.app.run()
+# def main(_):
+#   if not FLAGS.pos_data_path:
+#     raise ValueError("No data files found in 'data_path' folder")
+#
+#   raw_data = reader.load_data(FLAGS.pos_data_path)
+#   # train_data, valid_data, test_data, _ = raw_data
+#   train_word, train_tag, dev_word, dev_tag, test_word, test_tag, vocab_size = raw_data
+#
+#   config = get_config(FLAGS.pos_lang)
+#   eval_config = get_config(FLAGS.pos_lang)
+#   eval_config.batch_size = 1
+#   eval_config.num_steps = 1
+#
+#   with tf.Graph().as_default(), tf.Session() as session:
+#     initializer = tf.random_uniform_initializer(-config.init_scale,
+#                                                 config.init_scale)
+#     with tf.variable_scope(FLAGS.pos_scope_name, reuse=None, initializer=initializer):
+#       m = POSTagger(is_training=True, config=config)
+#     with tf.variable_scope(FLAGS.pos_scope_name, reuse=True, initializer=initializer):
+#       mvalid = POSTagger(is_training=False, config=config)
+#       mtest = POSTagger(is_training=False, config=eval_config)
+#
+#     # CheckPoint State
+#     ckpt = tf.train.get_checkpoint_state(FLAGS.pos_train_dir)
+#     if ckpt:
+#       print("Loading model parameters from %s" % ckpt.model_checkpoint_path)
+#       m.saver.restore(session, tf.train.latest_checkpoint(FLAGS.pos_train_dir))
+#     else:
+#       print("Created model with fresh parameters.")
+#       session.run(tf.global_variables_initializer())
+#
+#     for i in range(config.max_max_epoch):
+#       lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
+#       m.assign_lr(session, config.learning_rate * lr_decay)
+#
+#       print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
+#       train_perplexity = run_epoch(session, m, train_word, train_tag, m.train_op,
+#                                    verbose=True)
+#       print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
+#       valid_perplexity = run_epoch(session, mvalid, dev_word, dev_tag, tf.no_op())
+#       print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
+#
+#     test_perplexity = run_epoch(session, mtest, test_word, test_tag, tf.no_op())
+#     print("Test Perplexity: %.3f" % test_perplexity)
+#
+# if __name__ == "__main__":
+#   tf.app.run()
