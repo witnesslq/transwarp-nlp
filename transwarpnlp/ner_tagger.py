@@ -1,10 +1,5 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
-'''
-NER training module
-@author: xichen ding
-@date: 2016-11-15
-'''
 
 from __future__ import absolute_import
 from __future__ import division
@@ -88,10 +83,6 @@ class ModelLoader(object):
         return zip(words, predict_tag)
     
 def load_model(lang = 'zh'):
-    ''' data_path e.g.: ./deepnlp/ner/data/zh
-        ckpt_path e.g.: ./deepnlp/ner/ckpt/zh/ner.ckpt
-        ckpt_file e.g.: ./deepnlp/ner/ckpt/zh/ner.ckpt.data-00000-of-00001
-    '''
     data_path = os.path.join(pkg_path, "ner/data", lang) # NER vocabulary data path
     ckpt_path = os.path.join(pkg_path, "ner/ckpt", lang, "ner.ckpt") # NER model checkpoint path
     return ModelLoader(lang, data_path, ckpt_path)

@@ -1,31 +1,25 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
-'''
-POS module global function 'predict'
-@author: xichen ding
-@date: 2016-11-15
-'''
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals # compatible with python3 unicode coding
 
-import sys, os
+import os
 import tensorflow as tf
 import numpy as np
 import glob
 
-# adding pos submodule to sys.path, compatible with py3 absolute_import
-# pkg_path = os.path.dirname(__file__) # .../deepnlp/
-# sys.path.append(pkg_path)
 from pos import pos_model as pos_model
-from pos.pos_model import LargeConfigChinese
+from pos import pos_model_bilstm
+from pos.config import LargeConfig
 from pos import reader as pos_reader
 
 class ModelLoader(object):
     
-    def __init__(self, data_path, ckpt_path):
+    def __init__(self, data_path, ckpt_path, method):
+        self.method = method
         self.data_path = data_path
         self.ckpt_path = ckpt_path  # the path of the ckpt file, e.g. ./ckpt/zh/pos.ckpt
         print("Starting new Tensorflow session...")
@@ -46,12 +40,15 @@ class ModelLoader(object):
         """Create POS Tagger model and initialize with random or load parameters in session."""
         # initilize config
         # config = POSConfig()   # Choose the config of language option
-        config = LargeConfigChinese
+        config = LargeConfig()
         config.batch_size = 1
         config.num_steps = 1 # iterator one token per time
       
         with tf.variable_scope("pos_var_scope"):  #Need to Change in Pos_Tagger Save Function
-            model = pos_model.POSTagger(is_training=False, config=config) # save object after is_training
+            if self.method == "lstm":
+                model = pos_model.POSTagger(is_training=False, config=config)
+            else:
+                model = pos_model_bilstm.POSTagger(is_training=False, config=config)
         
         if len(glob.glob(ckpt_path + '.data*')) > 0: # file exist with pattern: 'pos.ckpt.data*'
             print("Loading model parameters from %s" % ckpt_path)
@@ -89,8 +86,12 @@ class ModelLoader(object):
         predict_tag = pos_reader.word_ids_to_sentence(data_path, predict_id)
         return zip(words, predict_tag)
     
-def load_model(pos_path):
-    data_path = os.path.join(pos_path, "data/pos/data") # POS vocabulary data path
-    ckpt_path = os.path.join(pos_path, "data/pos/ckpt", "ckpt") # POS model checkpoint path
-    return ModelLoader(data_path, ckpt_path)
+def load_model(root_path, method="lstm"):
+    data_path = os.path.join(root_path, "data/pos/data") # POS vocabulary data path
+    if method == "lstm":
+        ckpt_path = os.path.join(root_path, "data/pos/ckpt/lstm", "lstm.ckpt") # POS model checkpoint path
+    else:
+        ckpt_path = os.path.join(root_path, "data/pos/ckpt/bilstm", "bilstm.ckpt") # POS model checkpoint path
+
+    return ModelLoader(data_path, ckpt_path, method)
 

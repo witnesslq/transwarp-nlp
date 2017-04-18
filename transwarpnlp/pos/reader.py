@@ -9,12 +9,11 @@ from __future__ import print_function
 from __future__ import unicode_literals # compatible with python3 unicode
 
 import collections
-import sys, os
+import os
 import codecs
 import re
 
 import numpy as np
-import tensorflow as tf
 
 global UNKNOWN, DELIMITER
 UNKNOWN = "*"
@@ -96,8 +95,8 @@ def word_ids_to_sentence(data_path, ids):
 def _file_to_word_ids(filename, word_to_id, tag_to_id):
   words, sentences = _read_file(filename)
   word, tag = _split_word_tag(words)
-  wordArray = [word_to_id[w] if w in word_to_id else word_to_id[UNKNOWN] for w in word]
-  tagArray = [tag_to_id[t] if t in tag_to_id else tag_to_id[UNKNOWN] for t in tag]
+  wordArray = [word_to_id.get(w, word_to_id[UNKNOWN]) for w in word]
+  tagArray = [tag_to_id.get(w, tag_to_id[UNKNOWN]) for w in tag]
   return wordArray, tagArray
 
 def load_data(data_path=None):
@@ -167,26 +166,3 @@ def iterator(word_data, tag_data, batch_size, num_steps):
     # for sequence tagging, {x: X(t), y: Y(t)}
     y = yArray[:, i*num_steps:(i+1)*num_steps]
     yield (x, y)
-
-def main():
-  """
-  Test load_data method and iterator method
-  """
-  data_path ="/mnt/pypi/deepnlp/deepnlp/pos/data/zh"
-  print ("Data Path: " + data_path)
-  train_word, train_tag, dev_word, dev_tag, test_word, test_tag, _ = load_data(data_path)
-  
-  iter = iterator(train_word, train_tag, 1, 30)
-  count = 0
-  for step, (x, y) in enumerate(iter):
-    count +=1;
-    #rint (x)
-    #rint (y)
-  print ("Train Total Epoch/Sentence number Count:" + str(count))
-  
-  ids = [1,4,2,7,20]
-  sentence = word_ids_to_sentence(data_path, ids)
-  #print (sentence)
-
-if __name__ == '__main__':
-  main()
