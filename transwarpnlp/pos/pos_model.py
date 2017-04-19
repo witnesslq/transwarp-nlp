@@ -56,7 +56,8 @@ class POSTagger(object):
     state = self._initial_state
     with tf.variable_scope("pos_lstm"):
       for time_step in range(num_steps):
-        if time_step > 0: tf.get_variable_scope().reuse_variables()
+        if time_step > 0:
+          tf.get_variable_scope().reuse_variables()
         (cell_output, state) = cell(inputs[:, time_step, :], state)
         outputs.append(cell_output)
     

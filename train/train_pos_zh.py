@@ -30,7 +30,7 @@ def train_lstm(data_path):
     eval_config.num_steps = 1
 
     with tf.Graph().as_default(), tf.Session() as sess:
-        initializer = tf.random_normal_initializer(- config.init_scale, config.init_scale)
+        initializer = tf.random_normal_initializer(-config.init_scale, config.init_scale)
         with tf.variable_scope(FLAGS.pos_scope_name, reuse=None, initializer=initializer):
             m = pos_model.POSTagger(is_training=True, config=config)
         with tf.variable_scope(FLAGS.pos_scope_name, reuse=True, initializer=initializer):
@@ -47,7 +47,7 @@ def train_lstm(data_path):
             sess.run(tf.global_variables_initializer())
 
         for i in range(config.max_max_epoch):
-            lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
+            lr_decay = config.lr_decay ** max(float(i - config.max_epoch), 0.0)
             m.assign_lr(sess, config.learning_rate * lr_decay)
             print("Epoch: %d Learning rate: %.3f" % (i + 1, sess.run(m.lr)))
 
@@ -86,7 +86,7 @@ def train_bilstm(data_path):
             sess.run(tf.global_variables_initializer())
 
         for i in range(config.max_max_epoch):
-            lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
+            lr_decay = config.lr_decay ** max(float(i - config.max_epoch), 0.0)
             m.assign_lr(sess, config.learning_rate * lr_decay)
 
             print("Epoch: %d Learning rate: %.3f" % (i + 1, sess.run(m.lr)))
