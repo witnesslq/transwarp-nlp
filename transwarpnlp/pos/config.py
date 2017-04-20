@@ -13,6 +13,6 @@ class LargeConfig(object):
   max_max_epoch = 10
   keep_prob = 1.0
   lr_decay = 1 / 1.15
-  batch_size = 1        # single sample batch
+  batch_size = 10        # single sample batch
   vocab_size = 50000
   target_num = 48       # POS tagging tag number for Chinese

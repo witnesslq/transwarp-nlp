@@ -12,27 +12,9 @@ from __future__ import unicode_literals # compatible with python3 unicode coding
 import time
 import numpy as np
 import tensorflow as tf
-import sys, os
+import os
 
-pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # .../deepnlp/
-sys.path.append(pkg_path)
-from ner import reader # explicit relative import
-
-# language option python command line 'python ner_model.py zh'
-lang = "zh" if len(sys.argv)==1 else sys.argv[1] # default zh
-file_path = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(file_path, "data", lang)
-train_dir = os.path.join(file_path, "ckpt", lang)
-
-flags = tf.flags
-logging = tf.logging
-
-flags.DEFINE_string("ner_lang", lang, "ner language option for model config")
-flags.DEFINE_string("ner_data_path", data_path, "data_path")
-flags.DEFINE_string("ner_train_dir", train_dir, "Training directory.")
-flags.DEFINE_string("ner_scope_name", "ner_var_scope", "Variable scope of NER Model")
-
-FLAGS = flags.FLAGS
+from ner import reader
 
 def data_type():
   return tf.float32
@@ -139,50 +121,8 @@ class NERTagger(object):
   def train_op(self):
     return self._train_op
 
-# NER Model Configuration, Set Target Num, and input vocab_Size
-class LargeConfigChinese(object):
-  """Large config."""
-  init_scale = 0.04
-  learning_rate = 0.1
-  max_grad_norm = 10
-  num_layers = 2
-  num_steps = 30
-  hidden_size = 128
-  max_epoch = 14
-  max_max_epoch = 55
-  keep_prob = 1.00    # remember to set to 1.00 when making new prediction
-  lr_decay = 1 / 1.15
-  batch_size = 1 # single sample batch
-  vocab_size = 60000
-  target_num = 8 # NER Tag 7, nt, n, p, o, q (special), nz entity_name, nbz
 
-class LargeConfigEnglish(object):
-  """Large config."""
-  init_scale = 0.04
-  learning_rate = 0.1
-  max_grad_norm = 10
-  num_layers = 2
-  num_steps = 30
-  hidden_size = 128
-  max_epoch = 14
-  max_max_epoch = 55
-  keep_prob = 1.00    # remember to set to 1.00 when making new prediction
-  lr_decay = 1 / 1.15
-  batch_size = 1 # single sample batch
-  vocab_size = 52000
-  target_num = 15  # NER Tag 17, n, nf, nc, ne, (name, start, continue, end) n, p, o, q (special), nz entity_name, nbz
-
-def get_config(lang):
-  if (lang == 'zh'):
-    return LargeConfigChinese()  
-  elif (lang == 'en'):
-    return LargeConfigEnglish()
-  # other lang options
-  
-  else :
-    return None
-
-def run_epoch(session, model, word_data, tag_data, eval_op, verbose=False):
+def run_epoch(session, model, word_data, tag_data, eval_op, ner_train_dir, verbose=False):
   """Runs the model on the given data."""
   epoch_size = ((len(word_data) // model.batch_size) - 1) // model.num_steps
   start_time = time.time()
@@ -210,57 +150,8 @@ def run_epoch(session, model, word_data, tag_data, eval_op, verbose=False):
     # Save Model to CheckPoint when is_training is True
     if model.is_training:
       if step % (epoch_size // 10) == 10:
-        checkpoint_path = os.path.join(FLAGS.ner_train_dir, "ner.ckpt")
+        checkpoint_path = os.path.join(ner_train_dir, "lstm", "lstm.ckpt")
         model.saver.save(session, checkpoint_path)
         print("Model Saved... at time step " + str(step))
 
   return np.exp(costs / iters)
-
-
-def main(_):
-  if not FLAGS.ner_data_path:
-    raise ValueError("No data files found in 'data_path' folder")
-
-  raw_data = reader.load_data(FLAGS.ner_data_path)
-  train_word, train_tag, dev_word, dev_tag, test_word, test_tag, vocabulary = raw_data
-  
-  config = get_config(FLAGS.ner_lang)
-  
-  eval_config = get_config(FLAGS.ner_lang)
-  eval_config.batch_size = 1
-  eval_config.num_steps = 1
-  
-  with tf.Graph().as_default(), tf.Session() as session:
-    initializer = tf.random_uniform_initializer(-config.init_scale,
-                                                config.init_scale)
-    with tf.variable_scope(FLAGS.ner_scope_name, reuse=None, initializer=initializer):
-      m = NERTagger(is_training=True, config=config)
-    with tf.variable_scope(FLAGS.ner_scope_name, reuse=True, initializer=initializer):
-      mvalid = NERTagger(is_training=False, config=config)
-      mtest = NERTagger(is_training=False, config=eval_config)
-    
-    # CheckPoint State
-    ckpt = tf.train.get_checkpoint_state(FLAGS.ner_train_dir)
-    if ckpt:
-      print("Loading model parameters from %s" % ckpt.model_checkpoint_path)
-      m.saver.restore(session, tf.train.latest_checkpoint(FLAGS.ner_train_dir))
-    else:
-      print("Created model with fresh parameters.")
-      session.run(tf.global_variables_initializer())
-    
-    for i in range(config.max_max_epoch):
-      lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
-      m.assign_lr(session, config.learning_rate * lr_decay)
-    
-      print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
-      train_perplexity = run_epoch(session, m, train_word, train_tag, m.train_op,
-                                   verbose=True)
-      print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-      valid_perplexity = run_epoch(session, mvalid, dev_word, dev_tag, tf.no_op())
-      print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-
-    test_perplexity = run_epoch(session, mtest, test_word, test_tag, tf.no_op())
-    print("Test Perplexity: %.3f" % test_perplexity)
-
-if __name__ == "__main__":
-  tf.app.run()
