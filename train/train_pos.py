@@ -102,6 +102,6 @@ def train_bilstm(data_path):
         print("Test Perplexity: %.3f" % test_perplexity)
 
 if __name__ == "__main__":
-    data_path = os.path.join(pkg_path, "data", "pos", "data")
+    data_path = os.path.join(pkg_path, "data/pos/data")
     train_lstm(data_path)
     #train_bilstm(data_path)

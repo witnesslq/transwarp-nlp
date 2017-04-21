@@ -14,5 +14,5 @@ class LargeConfig(object):
   keep_prob = 1.0
   lr_decay = 1 / 1.15
   batch_size = 10        # single sample batch
-  vocab_size = 50000
-  target_num = 48       # POS tagging tag number for Chinese
+  vocab_size = 60000
+  target_num = 100       # POS tagging tag number for Chinese

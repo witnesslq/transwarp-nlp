@@ -6,22 +6,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals # compatible with python3 unicode coding
 
-import sys, os
+import os
 import tensorflow as tf
 import numpy as np
 import glob
 
-# adding pos submodule to sys.path, compatible with py3 absolute_import
-pkg_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(pkg_path)
-
 from ner import ner_model as ner_model
 from ner import reader as ner_reader
+from ner.config import LargeConfig
 
 class ModelLoader(object):
 
-    def __init__(self, lang, data_path, ckpt_path):
-        self.lang = lang
+    def __init__(self, data_path, ckpt_path, method):
+        self.method = method
         self.data_path = data_path
         self.ckpt_path = ckpt_path
         print("Starting new Tensorflow session...")
@@ -41,7 +38,7 @@ class ModelLoader(object):
     def _init_ner_model(self, session, ckpt_path):
         """Create ner Tagger model and initialize or load parameters in session."""
         # initilize config
-        config = ner_model.get_config(self.lang)
+        config = LargeConfig()
         config.batch_size = 1
         config.num_steps = 1 # iterator one token per time
         
@@ -82,8 +79,12 @@ class ModelLoader(object):
         predict_tag = ner_reader.word_ids_to_sentence(data_path, predict_id)
         return zip(words, predict_tag)
     
-def load_model(lang = 'zh'):
-    data_path = os.path.join(pkg_path, "ner/data", lang) # NER vocabulary data path
-    ckpt_path = os.path.join(pkg_path, "ner/ckpt", lang, "ner.ckpt") # NER model checkpoint path
-    return ModelLoader(lang, data_path, ckpt_path)
+def load_model(root_path, method="lstm"):
+    data_path = os.path.join(root_path, "data/ner/data")  # POS vocabulary data path
+    if method == "lstm":
+        ckpt_path = os.path.join(root_path, "data/ner/ckpt/lstm", "lstm.ckpt")  # POS model checkpoint path
+    else:
+        ckpt_path = os.path.join(root_path, "data/ner/ckpt/bilstm", "bilstm.ckpt")  # POS model checkpoint path
+
+    return ModelLoader(data_path, ckpt_path, method)
 
