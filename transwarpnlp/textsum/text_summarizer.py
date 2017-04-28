@@ -15,15 +15,13 @@ import tensorflow as tf
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # parent folder
 sys.path.append(parent_dir)
 
-from textsum import data_utils # absolute import
-from textsum import seq2seq_model # absolute import
-from textsum.headline import config
-from textsum.headline import create_model
-from textsum.headline import buckets
+from textsum import data_utils
+from transwarpnlp.textsum.config import LargeConfig
+from train_textsum import create_model
 
-config # new Large Config, set to tf.app.flags
+config = LargeConfig() # new Large Config, set to tf.app.flags
 FLAGS = tf.app.flags.FLAGS # Load tf.FLAGS param from headline module
-buckets = buckets
+buckets = config.buckets
 
 class ModelLoader(object):
 

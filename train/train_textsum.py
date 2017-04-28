@@ -21,7 +21,6 @@ flags.DEFINE_string("text_sum_train_dir", train_dir, "Training directory.")
 # We use a number of buckets and pad to the closest one for efficiency.
 # See seq2seq_model.Seq2SeqModel for details of how they work.
 # article length padded to 120 and summary padded to 30
-buckets = [(120, 30), (200, 35), (300, 40), (400, 40), (500, 40)]
 config = LargeConfig()
 
 tf.app.flags.DEFINE_integer("max_train_data_size", 0, "Limit on the size of training data (0: no limit).")
@@ -34,7 +33,7 @@ def create_model(sess, forward_only):
     with tf.variable_scope(FLAGS.headline_scope_name, reuse=None, initializer= initializer):
         model = seq2seq_model.Seq2SeqModel(config.vocab_size,
                                            config.vocab_size,
-                                           buckets=buckets,
+                                           buckets=config.buckets,
                                            size=config.size,
                                            num_layers=config.num_layers,
                                            max_gradient_norm=config.max_gradient_norm,
@@ -74,7 +73,7 @@ def read_data(source_path, target_path, max_size=None):
           into the n-th bucket, i.e., such that len(source) < buckets[n][0] and
           len(target) < buckets[n][1]; source and target are lists of token-ids.
       """
-    data_set = [[] for _ in buckets]
+    data_set = [[] for _ in config.buckets]
     with tf.gfile.GFile(source_path, mode='r') as source_file,\
          tf.gfile.GFile(target_path, mode='r') as target_file:
         source, target = source_file.readline(), target_file.readline()
@@ -84,7 +83,7 @@ def read_data(source_path, target_path, max_size=None):
             source_ids = [int(x) for x in source.split()]
             target_ids = [int(x) for x in target.split()]
             target_ids.append(data_utils.EOS_ID)
-            for bucket_id, (source_size, target_size) in enumerate(buckets):
+            for bucket_id, (source_size, target_size) in enumerate(config.buckets):
                 if len(source_ids) < source_size and len(target_ids) < target_size:
                     data_set[bucket_id].append([source_ids, target_ids])
                     break
@@ -110,7 +109,7 @@ def trainSeq2Seq(data_path):
 
         dev_set = read_data(src_dev, dest_dev)
         train_set = read_data(src_train, dest_train, FLAGS.max_train_data_size)
-        train_bucket_sizes = [len(train_set[b]) for b in xrange(len(buckets))]
+        train_bucket_sizes = [len(train_set[b]) for b in xrange(len(config.buckets))]
         train_total_size = float(sum(train_bucket_sizes))
 
         # A bucket scale is a list of increasing numbers from 0 to 1 that we'll use
@@ -157,7 +156,7 @@ def trainSeq2Seq(data_path):
                 model.saver.save(sess, checkpoint_path, global_step=model.global_step)
                 step_time, loss = 0.0, 0.0
                 # Run evals on development set and print their perplexity.
-                for bucket_id in xrange(len(buckets)):
+                for bucket_id in xrange(len(config.buckets)):
                     if len(dev_set[bucket_id]) == 0:
                         print("  eval: empty bucket %d" % (bucket_id))
                         continue
