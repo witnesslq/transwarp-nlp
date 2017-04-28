@@ -6,8 +6,8 @@ import sys,os
 import CRFPP
 
 # linear chain CRF model path, need str input, convert unicode to str
-pkg_path = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_MODEL = str(os.path.join(pkg_path, "segment/data/crf_model"))
+pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_MODEL = str(os.path.join(pkg_path, "data/seg/data/crf_model"))
 
 class Tokenizer(object):
 

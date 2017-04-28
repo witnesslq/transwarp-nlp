@@ -22,12 +22,10 @@ from __future__ import print_function
 import random
 
 import numpy as np
-from six.moves import xrange  # pylint: disable=redefined-builtin
+from six.moves import xrange
 import tensorflow as tf
-#from tensorflow.models.rnn import rnn_cell
-#from tensorflow.models.rnn import seq2seq
 
-import data_utils
+from transwarpnlp.textsum import data_utils
 
 class Seq2SeqModel(object):
   """Sequence-to-sequence model with attention and for multiple buckets.
@@ -163,6 +161,7 @@ class Seq2SeqModel(object):
     
     # Training outputs and losses.
     if forward_only:
+      print("forward only")
       self.outputs, self.losses = tf.contrib.legacy_seq2seq.model_with_buckets(
           self.encoder_inputs, self.decoder_inputs, targets,
           self.target_weights, buckets, lambda x, y: seq2seq_f(x, y, True),
@@ -175,6 +174,7 @@ class Seq2SeqModel(object):
               for output in self.outputs[b]
           ]
     else:
+      print("not forward only")
       self.outputs, self.losses = tf.contrib.legacy_seq2seq.model_with_buckets(
           self.encoder_inputs, self.decoder_inputs, targets,
           self.target_weights, buckets, lambda x, y: seq2seq_f(x, y, False),
@@ -193,7 +193,8 @@ class Seq2SeqModel(object):
         self.gradient_norms.append(norm)
         self.updates.append(opt.apply_gradients(
             zip(clipped_gradients, params), global_step=self.global_step))
-  
+
+    print("save global variables")
     self.saver = tf.train.Saver(tf.global_variables())  # tf.all_variables() depreciated 
   
   def step(self, session, encoder_inputs, decoder_inputs, target_weights,

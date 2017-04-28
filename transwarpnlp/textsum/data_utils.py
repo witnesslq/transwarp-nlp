@@ -6,12 +6,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import gzip
 import os
 import re
-import tarfile
-
-from six.moves import urllib
 
 from tensorflow.python.platform import gfile
 
@@ -59,7 +55,8 @@ def create_vocabulary(vocabulary_path, data_path, max_vocabulary_size,
   if not gfile.Exists(vocabulary_path):
     print("Creating vocabulary %s from data %s" % (vocabulary_path, data_path))
     vocab = {}
-    with gfile.GFile(data_path, mode="rb") as f:
+    with gfile.GFile(data_path, mode="rb") as f,\
+         gfile.GFile(vocabulary_path, mode="wb") as vocab_file:
       counter = 0
       for line in f:
         counter += 1
@@ -75,9 +72,13 @@ def create_vocabulary(vocabulary_path, data_path, max_vocabulary_size,
       vocab_list = _START_VOCAB + sorted(vocab, key=vocab.get, reverse=True)
       if len(vocab_list) > max_vocabulary_size:
         vocab_list = vocab_list[:max_vocabulary_size]
-      with gfile.GFile(vocabulary_path, mode="wb") as vocab_file:
-        for w in vocab_list:
-          vocab_file.write(w + b"\n")
+
+      for w in vocab_list:
+        vocab_file.write(w + b"\n")
+
+      vocab_file.flush()
+      vocab_file.close()
+      f.close()
 
 def initialize_vocabulary(vocabulary_path):
   """Initialize vocabulary from file.
@@ -185,27 +186,27 @@ def prepare_headline_data(data_dir, vocabulary_size, tokenizer=None):
       (5) path to the src/dest vocabulary file,
       (6) path to the src/dest vocabulary file.
   """
-  train_path = os.path.join(data_dir, "train")
-  src_train_path = os.path.join(train_path, "content-train.txt")
-  dest_train_path = os.path.join(train_path, "title-train.txt")
+  #train_path = os.path.join(data_dir)
+  src_train_path = os.path.join(data_dir, "content-train.txt")
+  dest_train_path = os.path.join(data_dir, "title-train.txt")
 
-  dev_path = os.path.join(data_dir, "dev")
-  src_dev_path = os.path.join(dev_path, "content-dev.txt")
-  dest_dev_path = os.path.join(dev_path, "title-dev.txt")
+  #dev_path = os.path.join(data_dir)
+  src_dev_path = os.path.join(data_dir, "content-dev.txt")
+  dest_dev_path = os.path.join(data_dir, "title-dev.txt")
 
   # Create vocabularies of the appropriate sizes.
   vocab_path = os.path.join(data_dir, "vocab")
   create_vocabulary(vocab_path, src_train_path, vocabulary_size, tokenizer)
 
   # Create token ids for the training data.
-  src_train_ids_path = os.path.join(train_path, "content_train_id")
-  dest_train_ids_path = os.path.join(train_path, "title_train_id")
+  src_train_ids_path = os.path.join(data_dir, "content_train_id")
+  dest_train_ids_path = os.path.join(data_dir, "title_train_id")
   data_to_token_ids(src_train_path, src_train_ids_path, vocab_path, tokenizer)
   data_to_token_ids(dest_train_path, dest_train_ids_path, vocab_path, tokenizer)
 
   # Create token ids for the development data.
-  src_dev_ids_path = os.path.join(dev_path, "content_dev_id")
-  dest_dev_ids_path = os.path.join(dev_path, "title_dev_id")
+  src_dev_ids_path = os.path.join(data_dir, "content_dev_id")
+  dest_dev_ids_path = os.path.join(data_dir, "title_dev_id")
   data_to_token_ids(src_dev_path, src_dev_ids_path, vocab_path, tokenizer)
   data_to_token_ids(dest_dev_path, dest_dev_ids_path, vocab_path, tokenizer)
 

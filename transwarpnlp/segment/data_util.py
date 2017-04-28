@@ -26,7 +26,7 @@ def character_tagging(input_file, output_file):
 
 if __name__ == '__main__':
 	if len(sys.argv) != 3:
-		print (argv[0])
+		print (sys.argv[0])
 		sys.exit(-1)
 	input_file = sys.argv[1]
 	output_file = sys.argv[2]
