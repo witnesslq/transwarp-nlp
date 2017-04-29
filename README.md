@@ -18,10 +18,12 @@
 - 中英机器翻译（实现中）
 - 语音识别（实现中）
 
-## 依赖
+## 依赖库
 
 * tensorflow (>= r1.0)
 * numpy
+* pandas
+* matplotlib
 * pygtrie
 
 ## 参考 
