@@ -25,6 +25,7 @@
 * pandas
 * matplotlib
 * pygtrie
+* future
 
 ## 参考 
 
@@ -35,3 +36,7 @@
 * https://github.com/jinfagang/tensorflow_poems
 * [deepnlp](https://github.com/rockingdingo/deepnlp)
 * [kcws](https://github.com/koth/kcws)
+
+## LICENSE
+
+MIT
