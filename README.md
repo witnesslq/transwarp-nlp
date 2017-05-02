@@ -33,7 +33,7 @@
 * [Memory Network](https://arxiv.org/pdf/1410.3916.pdf)
 * https://github.com/tensorflow/models/tree/master/tutorials/rnn/ptb
 * https://github.com/tensorflow/models/tree/master/textsum
-* https://github.com/tensorflow/tensorflow/blob/64edd34ce69b4a8033af5d217cb8894105297d8a/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py
+* https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py
 * https://github.com/qhduan/Seq2Seq_Chatbot_QA
 * https://github.com/jinfagang/tensorflow_poems
 * https://github.com/ganeshjawahar/mem_absa
