@@ -72,7 +72,7 @@ class MemN2N(object):
         '''
         til_hid = tf.tile(self.hid[-1], [1, self.mem_size])
         til_hid3dim = tf.reshape(til_hid, [-1, self.mem_size, self.edim])
-        a_til_concat = tf.concat(2, [til_hid3dim, Ain])
+        a_til_concat = tf.concat([til_hid3dim, Ain], 2)
         til_bl_wt = tf.tile(self.BL_W, [self.batch_size, 1])
         til_bl_3dim = tf.reshape(til_bl_wt, [self.batch_size, -1, 2 * self.edim])
         att = tf.matmul(a_til_concat, til_bl_3dim, adjoint_b = True)
@@ -97,7 +97,7 @@ class MemN2N(object):
             F = tf.slice(Dout, [0, 0], [self.batch_size, self.lindim])
             G = tf.slice(Dout, [0, self.lindim], [self.batch_size, self.edim-self.lindim])
             K = tf.nn.relu(G)
-            self.hid.append(tf.concat(1, [F, K]))
+            self.hid.append(tf.concat([F, K], 1))
 
     def build_model(self):
       self.build_memory()
@@ -105,7 +105,7 @@ class MemN2N(object):
       self.W = tf.Variable(tf.random_normal([self.edim, 3], stddev=self.init_std))
       z = tf.matmul(self.hid[-1], self.W)
 
-      self.loss = tf.nn.softmax_cross_entropy_with_logits(z, self.target)
+      self.loss = tf.nn.softmax_cross_entropy_with_logits(logits=z, labels=self.target)
 
       self.lr = tf.Variable(self.current_lr)
       self.opt = tf.train.GradientDescentOptimizer(self.lr)

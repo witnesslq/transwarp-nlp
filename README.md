@@ -34,6 +34,7 @@
 * https://github.com/tensorflow/tensorflow/blob/64edd34ce69b4a8033af5d217cb8894105297d8a/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py
 * https://github.com/qhduan/Seq2Seq_Chatbot_QA
 * https://github.com/jinfagang/tensorflow_poems
+* https://github.com/ganeshjawahar/mem_absa
 * [deepnlp](https://github.com/rockingdingo/deepnlp)
 * [kcws](https://github.com/koth/kcws)
 
