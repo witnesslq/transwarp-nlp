@@ -24,8 +24,6 @@ class MemN2N(object):
         self.target = tf.placeholder(tf.float32, [self.batch_size, 3], name="target")
         self.context = tf.placeholder(tf.int32, [self.batch_size, self.mem_size], name="context")
 
-        self.show = config.show
-
         self.hid = []
 
         self.lr = None
@@ -119,7 +117,7 @@ class MemN2N(object):
       with tf.control_dependencies([inc]):
           self.optim = self.opt.apply_gradients(clipped_grads_and_vars)
 
-      tf.initialize_all_variables().run()
+      tf.global_variables_initializer().run()
 
       self.correct_prediction = tf.argmax(z, 1)
 
@@ -132,15 +130,9 @@ class MemN2N(object):
       time = np.ndarray([self.batch_size, self.mem_size], dtype=np.int32)
       target = np.zeros([self.batch_size, 3]) # one-hot-encoded
       context = np.ndarray([self.batch_size, self.mem_size])
-      
-      if self.show:
-        from utils import ProgressBar
-        bar = ProgressBar('Train', max=N)
 
       rand_idx, cur = np.random.permutation(len(source_data)), 0
       for idx in xrange(N):
-        if self.show: bar.next()
-        
         context.fill(self.pad_idx)
         time.fill(self.mem_size)
         target.fill(0)
@@ -183,7 +175,6 @@ class MemN2N(object):
                                                 self.context: context})
         cost += np.sum(loss)
       
-      if self.show: bar.finish()
       _, train_acc = self.test(data)
       return cost/N/self.batch_size, train_acc
 

@@ -18,12 +18,11 @@ flags.DEFINE_integer("edim", 300, "internal state dimension [300]")
 flags.DEFINE_integer("lindim", 75, "linear part of the state [75]")
 flags.DEFINE_integer("nhop", 7, "number of hops [7]")
 flags.DEFINE_integer("batch_size", 128, "batch size to use during training [128]")
-flags.DEFINE_integer("nepoch", 100, "number of epoch to use during training [100]")
+flags.DEFINE_integer("nepoch", 2, "number of epoch to use during training [100]")
 flags.DEFINE_float("init_lr", 0.01, "initial learning rate [0.01]")
 flags.DEFINE_float("init_hid", 0.1, "initial internal state value [0.1]")
 flags.DEFINE_float("init_std", 0.05, "weight initialization std [0.05]")
 flags.DEFINE_float("max_grad_norm", 50, "clip gradients to this norm [50]")
-flags.DEFINE_boolean("show", False, "print progress [False]")
 
 
 FLAGS = flags.FLAGS

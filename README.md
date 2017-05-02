@@ -35,6 +35,8 @@
 * https://github.com/qhduan/Seq2Seq_Chatbot_QA
 * https://github.com/jinfagang/tensorflow_poems
 * https://github.com/ganeshjawahar/mem_absa
+* [Memory Network](https://arxiv.org/pdf/1410.3916.pdf)
+* [Aspect Level Sentiment Classification with Deep Memory Network](https://arxiv.org/abs/1605.08900)
 * [deepnlp](https://github.com/rockingdingo/deepnlp)
 * [kcws](https://github.com/koth/kcws)
 
