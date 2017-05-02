@@ -23,6 +23,8 @@ flags.DEFINE_float("init_lr", 0.01, "initial learning rate [0.01]")
 flags.DEFINE_float("init_hid", 0.1, "initial internal state value [0.1]")
 flags.DEFINE_float("init_std", 0.05, "weight initialization std [0.05]")
 flags.DEFINE_float("max_grad_norm", 50, "clip gradients to this norm [50]")
+flags.DEFINE_boolean("show", False, "print progress [False]")
+
 
 FLAGS = flags.FLAGS
 
