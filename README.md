@@ -9,7 +9,7 @@
 - 中文命名实体识别
 - 中文关键词抽取（实现中）
 - 中文文本自动摘要
-- 中文情感分析（实现中）
+- 情感分析
 - 依存句法分析
 - 中文文本分类（实现中）
 - 中文自由写诗（实现中）
@@ -19,6 +19,7 @@
 
 ## 依赖库
 
+* python3.5
 * tensorflow (>= r1.0)
 * numpy
 * pandas
@@ -28,16 +29,16 @@
 
 ## 参考 
 
+* [Aspect Level Sentiment Classification with Deep Memory Network](https://arxiv.org/abs/1605.08900)
+* [Memory Network](https://arxiv.org/pdf/1410.3916.pdf)
 * https://github.com/tensorflow/models/tree/master/tutorials/rnn/ptb
 * https://github.com/tensorflow/models/tree/master/textsum
 * https://github.com/tensorflow/tensorflow/blob/64edd34ce69b4a8033af5d217cb8894105297d8a/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py
 * https://github.com/qhduan/Seq2Seq_Chatbot_QA
 * https://github.com/jinfagang/tensorflow_poems
 * https://github.com/ganeshjawahar/mem_absa
-* [Memory Network](https://arxiv.org/pdf/1410.3916.pdf)
-* [Aspect Level Sentiment Classification with Deep Memory Network](https://arxiv.org/abs/1605.08900)
-* [deepnlp](https://github.com/rockingdingo/deepnlp)
-* [kcws](https://github.com/koth/kcws)
+* https://github.com/koth/kcws
+* https://github.com/rockingdingo/deepnlp
 
 ## LICENSE
 
