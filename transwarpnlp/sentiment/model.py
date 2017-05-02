@@ -1,11 +1,7 @@
-import os
-import sys
 import math
-import random
 import numpy as np
 import tensorflow as tf
 from past.builtins import xrange
-import time as tim
 
 class MemN2N(object):
     def __init__(self, config, sess):
@@ -79,7 +75,7 @@ class MemN2N(object):
         a_til_concat = tf.concat(2, [til_hid3dim, Ain])
         til_bl_wt = tf.tile(self.BL_W, [self.batch_size, 1])
         til_bl_3dim = tf.reshape(til_bl_wt, [self.batch_size, -1, 2 * self.edim])
-        att = tf.batch_matmul(a_til_concat, til_bl_3dim, adj_y = True)
+        att = tf.matmul(a_til_concat, til_bl_3dim, adjoint_b = True)
         til_bl_b = tf.tile(self.BL_B, [self.batch_size, self.mem_size])
         til_bl_3dim = tf.reshape(til_bl_b, [-1, self.mem_size, 1])
         g = tf.nn.tanh(tf.add(att, til_bl_3dim))
@@ -87,7 +83,7 @@ class MemN2N(object):
         P = tf.nn.softmax(g_2dim)
 
         probs3dim = tf.reshape(P, [-1, 1, self.mem_size])
-        Bout = tf.batch_matmul(probs3dim, Bin)
+        Bout = tf.matmul(probs3dim, Bin)
         Bout2dim = tf.reshape(Bout, [-1, self.edim])
 
         Cout = tf.matmul(self.hid[-1], self.C)
