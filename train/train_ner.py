@@ -1,4 +1,4 @@
-#coding:utf-8
+# -*- coding:utf-8 -*-
 
 from __future__ import unicode_literals
 import sys,os
@@ -41,9 +41,9 @@ def train_lstm(data_path):
 
         ckpt = tf.train.get_checkpoint_state(os.path.join(FLAGS.ner_train_dir, "lstm"))
 
-        if ckpt:
+        if ckpt and ckpt.model_checkpoint_path:
             print("Loading model parameters from %s" % ckpt.model_checkpoint_path)
-            m.saver.restore(tf.train.latest_checkpoint(os.path.join(FLAGS.ner_train_dir, "lstm")))
+            m.saver.restore(sess, ckpt.model_checkpoint_path)
         else:
             print("Created model with fresh parameters.")
             sess.run(tf.global_variables_initializer())
