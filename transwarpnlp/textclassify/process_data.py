@@ -140,14 +140,16 @@ def get_W(word_vecs, k=vector_size):
     """
     vocab_size = len(word_vecs)
     word_idx_map = dict()
+    idx_word_map = dict()
     W = np.zeros(shape=(vocab_size + 1, k), dtype='float64')
     W[0] = np.zeros(k, dtype='float64')
     i = 1
     for word in word_vecs:
         W[i] = word_vecs[word]
         word_idx_map[word] = i
+        idx_word_map[i] = word
         i += 1
-    return W, word_idx_map  # W为一个词向量矩阵 一个word可以通过word_idx_map得到其在W中的索引，进而得到其词向量
+    return W, word_idx_map, idx_word_map  # W为一个词向量矩阵 一个word可以通过word_idx_map得到其在W中的索引，进而得到其词向量
 
 
 def load_bin_vec(fname, vocab):
@@ -235,10 +237,10 @@ if __name__ == "__main__":
     print("word2vec loaded!")
     print("num words already in word2vec: " + str(len(w2v)))
     add_unknown_words(w2v, vocab)
-    W, word_idx_map = get_W(w2v)  # 利用一个构建好的word2vec向量来初始化词向量矩阵及词-向量映射表
+    W, word_idx_map, idx_word_map = get_W(w2v)  # 利用一个构建好的word2vec向量来初始化词向量矩阵及词-向量映射表
     rand_vecs = {}
     add_unknown_words(rand_vecs, vocab)  # 得到一个{word:word_vec}词典
-    W2, _ = get_W(rand_vecs)  # 构建一个随机初始化的W2词向量矩阵
+    W2, _, _ = get_W(rand_vecs)  # 构建一个随机初始化的W2词向量矩阵
     result_path = os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/mr.txt")
-    cPickle.dump([revs, W, W2, word_idx_map, vocab], open(result_path, "wb"))
+    cPickle.dump([revs, W, W2, word_idx_map, idx_word_map, vocab], open(result_path, "wb"))
     print("train data created!")

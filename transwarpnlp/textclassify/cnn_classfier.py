@@ -3,29 +3,21 @@
 import cPickle
 import numpy as np
 import warnings
-import os
-import time
 import tensorflow as tf
-# from matplotlib import pylab
-# from sklearn.manifold import TSNE
-
-pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from transwarpnlp.textclassify.cnn_config import CnnConfig
+from matplotlib import pylab
+pylab.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
+pylab.rcParams['axes.unicode_minus']=False #用来正常显示负号
+from sklearn.manifold import TSNE
+import os
 
 warnings.filterwarnings("ignore")
+
+config = CnnConfig()
 
 """
 使用tensorflow构建CNN模型进行文本分类
 """
-vector_size = 100
-sentence_length = 120
-hidden_layer_input_size = 100
-filter_hs = [3, 4, 5]
-num_filters = 128
-img_h = sentence_length
-img_w = vector_size
-filter_w = img_w
-batch_size = 100
-word_idx_map_szie = 75924  # 18766#75924
 
 # 一些数据预处理的方法======================================
 def get_idx_from_sent(sent, word_idx_map, max_l):
@@ -44,6 +36,8 @@ def get_idx_from_sent(sent, word_idx_map, max_l):
 
 
 def generate_batch(revs, word_idx_map, minibatch_index):
+    batch_size = config.batch_size
+    sentence_length = config.sentence_length
     minibatch_data = revs[minibatch_index * batch_size:(minibatch_index + 1) * batch_size]
     batchs = np.ndarray(shape=(batch_size, sentence_length), dtype=np.int32)
     labels = np.ndarray(shape=(batch_size, 2), dtype=np.int32)
@@ -61,6 +55,7 @@ def generate_batch(revs, word_idx_map, minibatch_index):
 
 
 def get_test_batch(revs, word_idx_map, cv=1):
+    sentence_length = config.sentence_length
     test = []
     for rev in revs:
         if rev["split"] == cv:
@@ -81,34 +76,20 @@ def get_test_batch(revs, word_idx_map, cv=1):
 
     return batchs, labels
 
-def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.1)
-    return tf.Variable(initial)
-
-
-# 产生常量矩阵
-def bias_variable(shape):
-    initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial)
-
 
 # 卷积图层 第一个卷积
-# strides：每跨多少步抽取信息，strides[1, x_movement,y_movement, 1]， strides[0]和strides[3]必须为1
-# padding：边距处理，“SAME”表示输出图层和输入图层大小保持不变，设置为“ VALID ”时表示舍弃多余边距(丢失信息)
 def conv2d(x, W):
     return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='VALID')
 
-
 # 定义pooling图层
-# pooling：解决跨步大时可能丢失一些信息的问题,max-pooling就是在前图层上依次不重合采样2*2的窗口最大值
-def max_pool_2x2(x, filter_h):
-    return tf.nn.max_pool(x, ksize=[1, img_h - filter_h + 1, 1, 1], strides=[1, 1, 1, 1], padding='VALID')
+def max_pool(x, filter_h):
+    return tf.nn.max_pool(x, ksize=[1, config.img_h - filter_h + 1, 1, 1], strides=[1, 1, 1, 1], padding='VALID')
 
 
 def build_model(x_in, y_in, keep_prob):
     # Embedding layer===============================
     # 要学习的词向量矩阵
-    embeddings = tf.Variable(tf.random_uniform([word_idx_map_szie, vector_size], -1.0, 1.0))
+    embeddings = tf.Variable(tf.random_uniform([config.word_idx_map_szie, config.vector_size], -1.0, 1.0))
     # 输入reshape
     x_image_tmp = tf.nn.embedding_lookup(embeddings, x_in)
     # 输入size: sentence_length*vector_size
@@ -116,159 +97,68 @@ def build_model(x_in, y_in, keep_prob):
     # 将[None, sequence_length, embedding_size]转为[None, sequence_length, embedding_size, 1]
     x_image = tf.expand_dims(x_image_tmp, -1)  # 单通道
 
-    # 定义卷积层===================================
-    W_conv = []
-    b_conv = []
-    for filter_h in filter_hs:
-        # 卷积的patch大小：vector_size*filter_h, 通道数量：1, 卷积数量：hidden_layer_input_size
-        filter_shape = [filter_h, vector_size, 1, num_filters]
-        W_conv1 = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
-        b_conv1 = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
-        # W_conv1 = weight_variable([filter_h, vector_size, 1, hidden_layer_input_size])
-        W_conv.append(W_conv1)
-        # b_conv1 = bias_variable([hidden_layer_input_size])
-        b_conv.append(b_conv1)
-    # 进行卷积操作
+    # 定义卷积层，进行卷积操作===================================
     h_conv = []
-    for W_conv1, b_conv1 in zip(W_conv, b_conv):
+    for filter_h in config.filter_hs:
+        # 卷积的patch大小：vector_size*filter_h, 通道数量：1, 卷积数量：hidden_layer_input_size
+        filter_shape = [filter_h, config.vector_size, 1, config.num_filters]
+        W_conv1 = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
+        b_conv1 = tf.Variable(tf.constant(0.1, shape=[config.num_filters]), name="b")
         h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)  # 输出szie: (sentence_length-filter_h+1,1)
         h_conv.append(h_conv1)
 
+
     # pool层========================================
     h_pool_output = []
-    for h_conv1, filter_h in zip(h_conv, filter_hs):
-        h_pool1 = max_pool_2x2(h_conv1, filter_h)  # 输出szie:1
+    for h_conv1, filter_h in zip(h_conv, config.filter_hs):
+        h_pool1 = max_pool(h_conv1, filter_h)  # 输出szie:1
         h_pool_output.append(h_pool1)
 
     # 全连接层=========================================
     l2_reg_lambda = 0.001
     # 输入reshape
-    num_filters_total = num_filters * len(filter_hs)
+    num_filters_total = config.num_filters * len(config.filter_hs)
     h_pool = tf.concat(h_pool_output, 3)
     h_pool_flat = tf.reshape(h_pool, [-1, num_filters_total])
-    # h_pool_flat = tf.reshape(h_pool, [-1, hidden_layer_input_size*len(filter_hs)])
 
     h_drop = tf.nn.dropout(h_pool_flat, keep_prob)
     # W = tf.Variable(tf.random_uniform([num_filters_total, 2], -1.0, 1.0))
     W = tf.Variable(tf.truncated_normal([num_filters_total, 2], stddev=0.1))
     b = tf.Variable(tf.constant(0.1, shape=[2]), name="b")
-    l2_loss = tf.nn.l2_loss(W)
-    l2_loss += tf.nn.l2_loss(b)
+    l2_loss = tf.nn.l2_loss(W) + tf.nn.l2_loss(b)
 
-    # scores=tf.nn.softmax(tf.matmul(h_drop, W) + b) #a softmax function to convert raw scores into normalized probabilities
     scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")  # wx+b
-    predictions = tf.argmax(scores, 1, name="predictions")
     losses = tf.nn.softmax_cross_entropy_with_logits(logits=scores, labels=y_in)
     loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
 
     correct_prediction = tf.equal(tf.argmax(scores, 1), tf.argmax(y_in, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     return loss, accuracy, embeddings
 
-def train_classfier(train_path):
-    print("loading data...")
-    x = cPickle.load(open(os.path.join(train_path, "data/mr.txt"), "rb"))
-    # 读取出预处理后的数据 revs {"y":label,"text":"word1 word2 ..."}
-    #                          word_idx_map["word"]==>index
-    #                        vocab["word"]==>frequency
-    revs, _, _, word_idx_map, vocab = x[0], x[1], x[2], x[3], x[4]
-    print("data loaded!")
-    revs = np.random.permutation(revs)  # 原始的sample正负样本是分别聚在一起的，这里随机打散
-    n_batches = len(revs) / batch_size  #
-    n_train_batches = int(np.round(n_batches * 0.9))
+def word2vec(embeddings, train_path, sess):
+    with sess.as_default():
+        norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keep_dims=True))
+        normalized_embeddings = embeddings / norm
+        final_embeddings = normalized_embeddings.eval()
+        filename = os.path.join(train_path, "ckpt/CNN_result_embeddings")
+        cPickle.dump(final_embeddings, open(filename, "wb"))
+        return final_embeddings
 
-    # 开始定义模型============================================
-    with tf.Graph().as_default(), tf.Session() as sess:
-        # 占位符 真实的输入输出
-        x_in = tf.placeholder(tf.int32, shape=[None, sentence_length], name="input_x")
-        y_in = tf.placeholder("float", [None, 2], name="input_y")  # 2分类问题
-        keep_prob = tf.placeholder("float")
+def display_word2vec(final_embeddings, idx_word_map):
+    num_points = 200
+    tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=5000)
+    two_d_embeddings = tsne.fit_transform(final_embeddings[1:num_points + 1, :])
 
-        # 构建模型
-        loss, accuracy, embeddings = build_model(x_in, y_in, keep_prob)
+    def plot(embeddings, labels):
+        assert embeddings.shape[0] >= len(labels), 'More labels than embeddings'
+        pylab.figure(figsize=(15, 15))
+        for i, label in enumerate(labels):
+            x, y = embeddings[i, :]
+            pylab.scatter(x, y)
+            pylab.annotate(label, xy=(x, y), xytext=(5, 2), textcoords='offset points',
+                           ha='right', va='bottom')
+        pylab.show()
 
-        # 训练模型========================================
-
-        num_steps = 4000
-        # L2正则化参数
-        beta = 0.001
-        global_step = tf.Variable(0)
-
-        learning_rate = tf.train.exponential_decay(1e-4, global_step, num_steps, 0.99, staircase=True)  # 学习率递减
-
-        train_step = tf.train.AdagradOptimizer(learning_rate).minimize(loss, global_step=global_step)
-
-        # summaries,====================
-        timestamp = str(int(time.time()))
-        out_dir = os.path.join(train_path, "summary", timestamp)
-        print("Writing to {}\n".format(out_dir))
-        loss_summary = tf.summary.scalar("loss", loss)
-        acc_summary = tf.summary.scalar("accuracy", accuracy)
-        train_summary_op = tf.summary.merge([loss_summary, acc_summary])
-        train_summary_dir = os.path.join(out_dir, "summaries", "train")
-        train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
-        checkpoint_dir = os.path.join(train_path, "ckpt")
-        checkpoint_prefix = os.path.join(checkpoint_dir, "classify")
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
-
-        saver = tf.train.Saver(tf.all_variables())
-
-        sess.run(tf.global_variables_initializer())
-
-        ckpt = tf.train.get_checkpoint_state(checkpoint_prefix)
-        if ckpt and ckpt.model_checkpoint_path:
-            saver.restore(sess, ckpt.latest_checkpoint(checkpoint_prefix))
-
-        batch_x_test, batch_y_test = get_test_batch(revs, word_idx_map)
-        current_step = tf.train.global_step(sess, global_step)
-        print("current_step:", current_step)
-        if num_steps > int(current_step / 135):
-            num_steps = num_steps - int(current_step / 135)
-            print("continute step:", num_steps)
-        else:
-            num_steps = 0
-        for i in range(num_steps):
-            for minibatch_index in np.random.permutation(range(n_train_batches)):  # 随机打散 每次输入的样本的顺序都不一样
-                batch_x, batch_y = generate_batch(revs, word_idx_map, minibatch_index)
-                # train_step.run(feed_dict={x_in: batch_x, y_in: batch_y, keep_prob: 0.5})
-                feed_dict = {x_in: batch_x, y_in: batch_y, keep_prob: 0.5}
-                _, step, summaries = sess.run([train_step, global_step, train_summary_op], feed_dict)
-                train_summary_writer.add_summary(summaries, step)
-            train_accuracy = accuracy.eval(feed_dict={x_in: batch_x_test, y_in: batch_y_test, keep_prob: 1.0})
-            current_step = tf.train.global_step(sess, global_step)
-            print("step %d, training accuracy %g" % (current_step, train_accuracy))
-            path = saver.save(sess, checkpoint_prefix, global_step=current_step)
-            print("Saved model checkpoint to {}\n".format(path))
-
-
-def word2vec(embeddings):
-    norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keep_dims=True))
-    normalized_embeddings = embeddings / norm
-    final_embeddings = normalized_embeddings.eval()
-    filename = "CNN_result_final_embeddings"
-    cPickle.dump(final_embeddings, open(filename, "wb"))
-
-
-# def display_word2vec(final_embeddings):
-#     num_points = 400
-#     tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=5000)
-#     two_d_embeddings = tsne.fit_transform(final_embeddings[1:num_points + 1, :])
-#
-#     def plot(embeddings, labels):
-#         assert embeddings.shape[0] >= len(labels), 'More labels than embeddings'
-#         pylab.figure(figsize=(15, 15))  # in inches
-#         for i, label in enumerate(labels):
-#             x, y = embeddings[i, :]
-#             pylab.scatter(x, y)
-#             pylab.annotate(label, xy=(x, y), xytext=(5, 2), textcoords='offset points',
-#                            ha='right', va='bottom')
-#         pylab.show()
-#
-#     words = [two_d_embeddings[i] for i in range(1, num_points + 1)]
-#     plot(two_d_embeddings, words)
-
-if __name__ == "__main__":
-    train_path = os.path.join(os.path.dirname(pkg_path), "data/textclassify")
-    train_classfier(train_path)
+    words = [idx_word_map[i].decode("utf-8") for i in range(1, num_points + 1)]
+    plot(two_d_embeddings, words)

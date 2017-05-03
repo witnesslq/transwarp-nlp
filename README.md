@@ -11,7 +11,7 @@
 - 中文文本自动摘要
 - 情感分析
 - 依存句法分析
-- 中文文本分类（实现中）
+- 中文文本分类
 - 中文自由写诗（实现中）
 - 中文对话系统（实现中）
 - 中文问答系统（实现中）
@@ -40,6 +40,7 @@
 * https://github.com/ganeshjawahar/mem_absa
 * https://github.com/koth/kcws
 * https://github.com/rockingdingo/deepnlp
+* https://github.com/LambdaWx/CNN_sentence_tensorflow
 
 ## LICENSE
 
