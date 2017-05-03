@@ -120,9 +120,9 @@ def build_model(x_in, y_in, keep_prob):
     num_filters_total = config.num_filters * len(config.filter_hs)
     h_pool = tf.concat(h_pool_output, 3)
     h_pool_flat = tf.reshape(h_pool, [-1, num_filters_total])
-
     h_drop = tf.nn.dropout(h_pool_flat, keep_prob)
-    # W = tf.Variable(tf.random_uniform([num_filters_total, 2], -1.0, 1.0))
+
+
     W = tf.Variable(tf.truncated_normal([num_filters_total, 2], stddev=0.1))
     b = tf.Variable(tf.constant(0.1, shape=[2]), name="b")
     l2_loss = tf.nn.l2_loss(W) + tf.nn.l2_loss(b)
