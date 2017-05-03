@@ -19,13 +19,14 @@
 
 ## 依赖库
 
-* python3.5
+* python2.7
 * tensorflow (>= r1.0)
 * numpy
 * pandas
 * matplotlib
 * pygtrie
 * future
+* cPickle
 
 ## 参考 
 

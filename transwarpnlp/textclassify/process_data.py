@@ -1,23 +1,33 @@
 # -*- coding: utf-8 -*-
+
 import numpy as np
 import cPickle
 from collections import defaultdict
-import sys, re
+import os, re
 import pandas as pd
+
+pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 vector_size = 50
 
-
+"""
+输入参数：
+    data_folder：训练数据路径
+    cv：cv值
+    clean_string：是否清洗数据
+返回值：
+    revs：原始文本，文本中单词个数，所属cv值
+    vocab：单词表（包括词和词频）
+"""
 def build_data_cv(data_folder, cv=10, clean_string=True):
     """
     二分类数据预处理
-    Loads data and split into 10 folds.
     """
     revs = []
     pos_file = data_folder[0]
     neg_file = data_folder[1]
     vocab = defaultdict(float)
-    count = 0
+
     with open(pos_file, "rb") as f:
         for line in f:
             if len(line) < 15:
@@ -38,10 +48,7 @@ def build_data_cv(data_folder, cv=10, clean_string=True):
                      "num_words": len(orig_rev.split()),  # 该段文本的单词数量
                      "split": np.random.randint(0, cv)}  # 具体的CV值
             revs.append(datum)
-            count = count + 1
-            if count > 200000:
-                break
-    count = 0
+
     with open(neg_file, "rb") as f:
         for line in f:
             if len(line) < 15:
@@ -55,21 +62,18 @@ def build_data_cv(data_folder, cv=10, clean_string=True):
             words = set(orig_rev.split())
             for word in words:
                 vocab[word] += 1
-            datum = {"y": 0,
+            datum = {"y": 0,  # 类别值
                      "text": orig_rev,
                      "num_words": len(orig_rev.split()),
                      "split": np.random.randint(0, cv)}
             revs.append(datum)
-            count = count + 1
-            if count > 200000:
-                break
-    return revs, vocab  # 返回原始的文本及对其的标记、单词表{word : word_count}
+
+    return revs, vocab
 
 
 def build_data_cv_multi(data_folder, cv=10, clean_string=False):
     """
     多分类数据预处理
-    Loads data and split into 10 folds.
     """
     revs = []
     alt_atheism = data_folder[0]
@@ -85,8 +89,8 @@ def build_data_cv_multi(data_folder, cv=10, clean_string=False):
             words = set(orig_rev.split())
             for word in words:
                 vocab[word] += 1
-            # lable [0,1,2..]的一个值
-            datum = {"y": 0,
+
+            datum = {"y": 0,  # 类别值
                      "text": orig_rev,
                      "num_words": len(orig_rev.split()),
                      "split": np.random.randint(0, cv)}
@@ -215,24 +219,26 @@ def clean_str_sst(string):
 
 if __name__ == "__main__":
     w2v_file = ""
-    # data_folder = ["rt-polarity.pos","rt-polarity.neg"]
-    data_folder = ["E:\doc\data\SogouC.reduced.20061127\SogouC.reduced\Reduced\C000013_pre.txt",
-                   "E:\doc\data\SogouC.reduced.20061127\SogouC.reduced\Reduced\C000024_pre.txt"]
-    print "loading data...",
+
+    data_folder = [os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/C000008.txt"),
+                   os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/C000010.txt")]
+
+    print("loading data...")
     revs, vocab = build_data_cv(data_folder, cv=10, clean_string=True)
     max_l = np.max(pd.DataFrame(revs)["num_words"])
-    print "data loaded!"
-    print "number of sentences: " + str(len(revs))
-    print "vocab size: " + str(len(vocab))
-    print "max sentence length: " + str(max_l)
-    print "loading word2vec vectors...",
+    print("data loaded!")
+    print("number of sentences: " + str(len(revs)))
+    print("vocab size: " + str(len(vocab)))
+    print("max sentence length: " + str(max_l))
+    print("loading word2vec vectors...")
     w2v = load_bin_vec(w2v_file, vocab)
-    print "word2vec loaded!"
-    print "num words already in word2vec: " + str(len(w2v))
+    print("word2vec loaded!")
+    print("num words already in word2vec: " + str(len(w2v)))
     add_unknown_words(w2v, vocab)
     W, word_idx_map = get_W(w2v)  # 利用一个构建好的word2vec向量来初始化词向量矩阵及词-向量映射表
     rand_vecs = {}
     add_unknown_words(rand_vecs, vocab)  # 得到一个{word:word_vec}词典
     W2, _ = get_W(rand_vecs)  # 构建一个随机初始化的W2词向量矩阵
-    cPickle.dump([revs, W, W2, word_idx_map, vocab], open("mr.p", "wb"))
-    print "dataset created!"
+    result_path = os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/mr.txt")
+    cPickle.dump([revs, W, W2, word_idx_map, vocab], open(result_path, "wb"))
+    print("train data created!")
