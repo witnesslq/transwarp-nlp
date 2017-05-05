@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import os
+import os, time
 from transwarpnlp.joint_seg_tagger.config import Config
 from transwarpnlp.dataprocess import joint_data_transform
+import tensorflow as tf
 
 pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -66,6 +67,15 @@ def train_joint(data_path):
     b_dev_x, b_dev_y, b_buckets, _ = joint_data_transform.pad_bucket(b_dev_x, b_dev_y, bucket_len_c=b_buckets)
 
     print('Training set: %d instances; Dev set: %d instances.' % (len(train_x[0]), len(dev_x[0])))
+
+    nums_tags = joint_data_transform.get_nums_tags(tag2idx, config.tag_scheme)
+
+    # allow_soft_placement=True ： 如果你指定的设备不存在，允许TF自动分配设备
+    configProto = tf.ConfigProto(allow_soft_placement=True)
+    print('Initialization....')
+    t = time()
+    initializer = tf.contrib.layers.xavier_initializer()
+    main_graph = tf.Graph()
 
 if __name__ == "__main__":
     data_path = os.path.join(pkg_path, "data/joint")
