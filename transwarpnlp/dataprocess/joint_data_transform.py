@@ -4,7 +4,6 @@ import numpy as np
 import math
 import os
 
-
 def get_ngrams(raw, gram):
     gram_set = set()
     li = gram/2
@@ -385,7 +384,7 @@ def pad_zeros(l, max_len):
             padded[k] = [np.pad(item, (0, max_len - len(item)), 'constant', constant_values=0) for item in v]
         return padded
 
-# 将不满足长度的句子填充空
+# 将不满足长度的句子填充0
 def pad_bucket(x, y, bucket_len_c=None):
     assert len(x[0]) == len(y[0])
     num_inputs = len(x)
@@ -428,3 +427,8 @@ def merge_bucket(x):
             m += i
         out.append(m)
     return out
+
+# 获取标签个数
+def get_nums_tags(tag2idx, tag_scheme):
+    nums_tags = [len(tag2idx[tag_scheme])]
+    return nums_tags
