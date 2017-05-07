@@ -3,6 +3,7 @@ import codecs
 import numpy as np
 import math
 import os
+from transwarpnlp.joint_seg_tagger.evaluation import score
 
 def get_ngrams(raw, gram):
     gram_set = set()
@@ -384,6 +385,12 @@ def pad_zeros(l, max_len):
             padded[k] = [np.pad(item, (0, max_len - len(item)), 'constant', constant_values=0) for item in v]
         return padded
 
+def unpad_zeros(l):
+    out = []
+    for tags in l:
+        out.append([np.trim_zeros(line) for line in tags])
+    return out
+
 # 将不满足长度的句子填充0
 def pad_bucket(x, y, bucket_len_c=None):
     assert len(x[0]) == len(y[0])
@@ -432,3 +439,110 @@ def merge_bucket(x):
 def get_nums_tags(tag2idx, tag_scheme):
     nums_tags = [len(tag2idx[tag_scheme])]
     return nums_tags
+
+def get_real_batch(counts, b_size):
+    real_batch_sizes = []
+    for c in counts:
+        if c < b_size:
+            real_batch_sizes.append(c)
+        else:
+            real_batch_sizes.append(b_size)
+    return real_batch_sizes
+
+def decode_tags(idx, index2tags, tag_scheme):
+    out = []
+    dic = index2tags[tag_scheme]
+    for id in idx:
+        sents = []
+        for line in id:
+            sent = []
+            for item in line:
+                tag = dic[item]
+                if '-' in tag:
+                    tag = tag.replace('E-', 'I-')
+                    tag = tag.replace('S-', 'B-')
+                else:
+                    tag = tag.replace('E', 'I')
+                    tag = tag.replace('S', 'B')
+                sent.append(tag)
+            sents.append(sent)
+        out.append(sents)
+    return out
+
+
+def decode_chars(idx, idx2chars):
+    out = []
+    for line in idx:
+        line = np.trim_zeros(line)
+        out.append([idx2chars[item] for item in line])
+    return out
+
+def generate_output(chars, tags, tag_scheme):
+    out = []
+    for i, tag in enumerate(tags):
+        assert len(chars) == len(tag)
+        sub_out = []
+        for chs, tgs in zip(chars, tag):
+            #print len(chs), len(tgs)
+            assert len(chs) == len(tgs)
+            c_word = ''
+            c_tag = ''
+            p_line = ''
+            for ch, tg in zip(chs, tgs):
+                if tag_scheme == 'seg':
+                    if tg == 'I':
+                        c_word += ch
+                    else:
+                        p_line += ' ' + c_word + '_' + '<UNK>'
+                        c_word = ch
+                else:
+                    tg_sets = tg.split('-')
+                    if tg_sets[0] == 'I' and tg_sets[1] == c_tag:
+                        c_word += ch
+                    else:
+                        p_line += ' ' + c_word + '_' + c_tag
+                        c_word = ch
+                        if len(tg_sets) < 2:
+                            c_tag = '<UNK>'
+                        else:
+                            c_tag = tg_sets[1]
+            if len(c_word) > 0:
+                if tag_scheme == 'seg':
+                    p_line += ' ' + c_word + '_' + '<UNK>'
+                elif len(c_tag) > 0:
+                    p_line += ' ' + c_word + '_' + c_tag
+            if tag_scheme == 'seg':
+                sub_out.append(p_line[8:])
+            else:
+                sub_out.append(p_line[3:])
+        out.append(sub_out)
+    return out
+
+def evaluator(prediction, gold, tag_scheme='BIES', verbose=False):
+    assert len(prediction) == len(gold)
+    scores = score(gold[0], prediction[0],  verbose)
+    print('Segmentation F-score: %f' % scores[0])
+    if tag_scheme != 'seg':
+        print('Tagging F-score: %f' % scores[1])
+    scores = [scores]
+    return scores
+
+def viterbi(max_scores, max_scores_pre, length, batch_size):
+    best_paths = []
+    for m in range(batch_size):
+        path = []
+        last_max_node = np.argmax(max_scores[m][length[m] - 1])
+        path.append(last_max_node)
+        for t in range(1, length[m])[::-1]:
+            last_max_node = max_scores_pre[m][t][last_max_node]
+            path.append(last_max_node)
+        path = path[::-1]
+        best_paths.append(path)
+    return best_paths
+
+def trim_output(out, length):
+    assert len(out) == len(length)
+    trimmed_out = []
+    for item, l in zip(out, length):
+        trimmed_out.append(item[:l])
+    return trimmed_out

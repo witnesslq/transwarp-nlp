@@ -5,8 +5,6 @@ class Config(object):
     word_vector = False
     pre_embeddings = True
     embeddings_dimension = 64
-    radical = False
-    radical_dimension = 30
     bucket_size = 10
     gru = False
     rnn_cell_dimension = 200
@@ -26,3 +24,4 @@ class Config(object):
     tag_batch = 200
     ensemble = False
     tag_scheme = 'BIES'
+    crf = 1
