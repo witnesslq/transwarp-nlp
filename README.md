@@ -31,17 +31,17 @@
 
 ## 参考 
 
-* [Aspect Level Sentiment Classification with Deep Memory Network](https://arxiv.org/abs/1605.08900)
-* [Memory Network](https://arxiv.org/pdf/1410.3916.pdf)
-* https://github.com/tensorflow/models/tree/master/tutorials/rnn/ptb
-* https://github.com/tensorflow/models/tree/master/textsum
-* https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py
-* https://github.com/qhduan/Seq2Seq_Chatbot_QA
-* https://github.com/jinfagang/tensorflow_poems
-* https://github.com/ganeshjawahar/mem_absa
-* https://github.com/koth/kcws
-* https://github.com/rockingdingo/deepnlp
-* https://github.com/LambdaWx/CNN_sentence_tensorflow
+* [Aspect Level Sentiment Classification with Deep Memory Network](https://arxiv.org/abs/1605.08900) `paper`
+* [Memory Network](https://arxiv.org/pdf/1410.3916.pdf) `paper`
+* https://github.com/tensorflow/models/tree/master/tutorials/rnn/ptb  `code`
+* https://github.com/tensorflow/models/tree/master/textsum `code`
+* https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py `code`
+* https://github.com/qhduan/Seq2Seq_Chatbot_QA `code`
+* https://github.com/jinfagang/tensorflow_poems `code`
+* https://github.com/ganeshjawahar/mem_absa `code`
+* https://github.com/koth/kcws `code`
+* https://github.com/rockingdingo/deepnlp `code`
+* https://github.com/LambdaWx/CNN_sentence_tensorflow `code`
 
 ## LICENSE
 
