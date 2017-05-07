@@ -3,6 +3,8 @@ import codecs
 import numpy as np
 import math
 import os
+import re
+import tensorflow as tf
 from transwarpnlp.joint_seg_tagger.evaluation import score
 
 def get_ngrams(raw, gram):
@@ -546,3 +548,147 @@ def trim_output(out, length):
     for item, l in zip(out, length):
         trimmed_out.append(item[:l])
     return trimmed_out
+
+def get_new_chars(path, char2idx, type='ctb'):
+    new_chars = set()
+    for line in codecs.open(path, 'rb', encoding='utf-8'):
+        line = line.strip()
+        if type == 'ctb':
+            segs = line.split(' ')
+            for seg in segs:
+                items = seg.split('_')
+                assert len(items) == 2
+                for ch in items[0]:
+                    if ch not in char2idx:
+                        new_chars.add(ch)
+        else:
+            line = re.sub('[\s+]', '', line)
+            for ch in line:
+                if ch not in char2idx:
+                    new_chars.add(ch)
+    return new_chars
+
+def get_new_grams(path, gram2idx, type='ctb'):
+    raw = []
+    for line in codecs.open(path, 'rb', encoding='utf-8'):
+        line = line.strip()
+        raw_l = ''
+        if type == 'ctb':
+            segs = line.split(' ')
+            for seg in segs:
+                items = seg.split('_')
+                assert len(items) == 2
+                raw_l += items[0]
+        else:
+            line = re.sub('[\s+]', '', line)
+            raw_l = line
+        raw.append(raw_l)
+    new_grams = []
+    for g_dic in gram2idx:
+        new_g = []
+        n = len(g_dic.keys()[0])
+        grams = get_ngrams(raw, n)
+        for g in grams:
+            if g not in g_dic:
+                new_g.append(g)
+        new_grams.append(new_g)
+    return new_grams
+
+def update_char_dict(char2idx, new_chars):
+    dim = len(char2idx)
+    for char in new_chars:
+        if char not in char2idx:
+            char2idx[char] = dim
+            dim += 1
+    idx2char = {k: v for v, k in char2idx.items()}
+    return char2idx, idx2char
+
+def update_gram_dicts(gram2idx, new_grams):
+    assert len(gram2idx) == len(new_grams)
+    new_gram2idx = []
+    for dic, n_gram in zip(gram2idx, new_grams):
+        assert len(dic.keys()[0]) == len(n_gram[0])
+        new_dic, _ = update_char_dict(dic, n_gram)
+        new_gram2idx.append(new_dic)
+    return new_gram2idx
+
+def get_input_vec_raw(path, fname, char2index):
+    max_len = 0
+    x_m = [[]]
+
+    for line in codecs.open(path + '/' + fname, 'r', encoding='utf-8'):
+        charIndices = []
+        line = re.sub('[\s+]', '', line)
+        if len(line) > max_len:
+            max_len = len(line)
+        for ch in line:
+            charIndices.append(char2index[ch])
+        x_m[0].append(charIndices)
+    return x_m, max_len
+
+def get_maxstep(path, raw_file):
+    maxstep = 0
+    for line in codecs.open(path + '/' + raw_file, 'r', encoding='utf-8'):
+        line = line.strip()
+        if len(line) > maxstep:
+            maxstep = len(line)
+    return maxstep
+
+def get_new_embeddings(new_chars, emb_dim, emb_path=None):
+    if emb_path is None:
+        return tf.random_uniform([len(new_chars), emb_dim], -math.sqrt(3 / emb_dim), math.sqrt(3 / emb_dim))
+    else:
+        assert os.path.isfile(emb_path)
+        emb = {}
+        new_emb = []
+        for line in codecs.open(emb_path, 'rb', encoding='utf-8'):
+            line = line.strip()
+            sets = line.split(' ')
+            emb[sets[0]] = np.asarray(sets[1:], dtype='float32')
+        if '<UNK>' not in emb:
+            unk = np.random.uniform(-math.sqrt(float(3) / emb_dim), math.sqrt(float(3) / emb_dim), emb_dim)
+            emb['<UNK>'] = np.asarray(unk, dtype='float32')
+        for ch in new_chars:
+            if ch in emb:
+                new_emb.append(emb[ch])
+            else:
+                new_emb.append(emb['<UNK>'])
+        return tf.stack(new_emb)
+
+
+def get_new_ng_embeddings(new_grams, emb_dim, emb_path=None):
+    new_embs = []
+    for i in range(len(new_grams)):
+        n = len(new_grams[i][0])
+        if emb_path is not None:
+            real_path = emb_path + '_' + str(n) + 'gram.txt'
+        else:
+            real_path = None
+        n_emb = get_new_embeddings(new_grams[i], emb_dim, real_path)
+        new_embs.append(n_emb)
+    return new_embs
+
+def get_gram_vec_raw(raw, gram2index):
+    out = []
+    for g_dic in gram2index:
+        out.append(gram_vec(raw, g_dic))
+    return out
+
+def get_input_vec_line(lines, char2index):
+    max_len = 0
+    x_m = [[]]
+    for line in lines:
+        charIndices = []
+        line = re.sub('[\s+]', '', line)
+        if len(line) > max_len:
+            max_len = len(line)
+        for ch in line:
+            charIndices.append(char2index[ch])
+        x_m[0].append(charIndices)
+    return x_m, max_len
+
+def printer(predictions, out_path):
+    fout = codecs.open(out_path, 'w', encoding='utf-8')
+    for line in predictions:
+        fout.write(line + '\n')
+    fout.close()

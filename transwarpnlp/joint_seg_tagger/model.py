@@ -333,3 +333,95 @@ class Model(object):
             predictions = Batch.predict(sess=sess[0], model=model, crf=self.crf, argmax=argmax, batch_size=batch_size,
                                         data=data, dr=self.drop_out, ensemble=ensemble, verbose=verbose)
         return predictions
+
+    def define_updates(self, new_chars, emb_path, char2idx, new_grams=None, ng_emb_path=None, gram2idx=None):
+        self.nums_chars += len(new_chars)
+
+        if self.word_vec and emb_path is not None:
+            old_emb_weights = self.emb_layer.embeddings
+            emb_dim = old_emb_weights.get_shape().as_list()[1]
+            new_emb = joint_data_transform.get_new_embeddings(new_chars, emb_dim, emb_path)
+            n_emb_sh = new_emb.get_shape().as_list()
+            if len(n_emb_sh) > 1:
+                new_emb_weights = tf.concat([old_emb_weights[:len(char2idx) - len(new_chars)], new_emb,
+                                                old_emb_weights[len(char2idx):]], axis=0)
+                assign_op = old_emb_weights.assign(new_emb_weights)
+                self.updates.append(assign_op)
+
+        if self.ngram is not None and ng_emb_path is not None:
+            old_gram_weights = [ng_layer.embeddings for ng_layer in self.gram_layers]
+            ng_emb_dim = old_gram_weights[0].get_shape().as_list()[1]
+            new_ng_emb = joint_data_transform.get_new_ng_embeddings(new_grams, ng_emb_dim, ng_emb_path)
+            for i in range(len(old_gram_weights)):
+                new_ng_weight = tf.concat([old_gram_weights[i][:len(gram2idx[i]) - len(new_grams[i])], new_ng_emb[i],
+                                              old_gram_weights[i][len(gram2idx[i]):]], axis=0)
+                assign_op = old_gram_weights[i].assign(new_ng_weight)
+                self.updates.append(assign_op)
+
+    def run_updates(self, sess, weight_path):
+        self.saver.restore(sess, weight_path)
+        for op in self.updates:
+            sess.run(op)
+        print('Loaded.')
+
+    def test(self, sess, t_x, t_y, idx2tag, idx2char, outpath=None, ensemble=None, batch_size=200):
+
+        t_y = joint_data_transform.unpad_zeros(t_y)
+        gold = joint_data_transform.decode_tags(t_y, idx2tag, self.tag_scheme)
+        chars = joint_data_transform.decode_chars(t_x[0], idx2char)
+        gold_out = joint_data_transform.generate_output(chars, gold, self.tag_scheme)
+
+        prediction = self.predict(data=t_x, sess=sess, model=self.input_v[0] + self.output[0], index=0,
+                                  ensemble=ensemble, batch_size=batch_size)
+        prediction = joint_data_transform.decode_tags(prediction, idx2tag, self.tag_scheme)
+        prediction_out = joint_data_transform.generate_output(chars, prediction, self.tag_scheme)
+
+        scores = joint_data_transform.evaluator(prediction_out, gold_out, tag_scheme=self.tag_scheme, verbose=True)
+
+        scores = np.asarray(scores)
+        scores_f = scores[:, 1]
+        best_idx = int(np.argmax(scores_f))
+
+        c_score = scores[0]
+
+        print('Best scores: ')
+        print('Segmentation F-score: %f' % c_score[0])
+        print('Segmentation Precision: %f' % c_score[2])
+        print('Segmentation Recall: %f\n' % c_score[3])
+
+        print('Joint POS tagging F-score: %f' % c_score[1])
+        print('Joint POS tagging Precision: %f' % c_score[4])
+        print('Joint POS tagging Recall: %f' % c_score[5])
+
+        if outpath is not None:
+            if self.tag_scheme == 'parallel':
+                final_out = prediction_out[best_idx + 1]
+            elif self.tag_scheme == 'mul':
+                final_out = prediction_out[best_idx]
+            else:
+                final_out = prediction_out[0]
+            joint_data_transform.printer(final_out, outpath)
+
+    def tag(self, sess, r_x, idx2tag, idx2char, expected_scheme='BIES', outpath='out.txt', ensemble=None,
+            batch_size=200, large_file=False):
+
+        chars = joint_data_transform.decode_chars(r_x[0], idx2char)
+
+        prediction = self.predict(data=r_x, sess=sess, model=self.input_v[0] + self.output[0], index=0,
+                                  ensemble=ensemble, batch_size=batch_size)
+        prediction = joint_data_transform.decode_tags(prediction, idx2tag, self.tag_scheme)
+        prediction_out = joint_data_transform.generate_output(chars, prediction, self.tag_scheme)
+
+        scheme2idx_short = {'BI': 1, 'BIE': 2, 'BIES': 3, 'Voting': 4}
+        scheme2idx_long = {'BIES': 0, 'long': 1}
+
+        if len(prediction_out) > 2:
+            final_out = prediction_out[scheme2idx_short[expected_scheme]]
+        elif len(prediction_out) == 2:
+            final_out = prediction_out[scheme2idx_long[expected_scheme]]
+        else:
+            final_out = prediction_out[0]
+        if large_file:
+            return final_out
+        else:
+            joint_data_transform.printer(final_out, outpath)

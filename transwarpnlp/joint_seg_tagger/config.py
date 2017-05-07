@@ -25,3 +25,5 @@ class Config(object):
     ensemble = False
     tag_scheme = 'BIES'
     crf = 1
+    tag_large = False
+    large_size = 200000
