@@ -13,20 +13,20 @@ pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 config = Config()
 
 def test_joint(data_path, method="test"):
-    test_file = "/data/test.txt"
+    test_file = "/data/test1.txt"
     raw_file = "/data/raw.txt"
-    model_file = "model/trained"
-    output_file = "model/output"
+    output_file = data_path + "/model/output"
 
     emb_path = None
     ng_emb_path = None
 
-    if not os.path.isfile(data_path + '/' + model_file + '_model')\
-        or not os.path.isfile(data_path + '/' + model_file + '_weights'):
-        raise Exception('No model file or weights file under the name of ' + model_file + '.')
+    model_path = data_path + '/model/trained_model'
+    weight_path = data_path + '/model/trained_model_weights'
 
-    fin = open(data_path + '/' + model_file + '_model', 'rb')
-    weight_path = data_path + '/' + model_file
+    if not os.path.isfile(model_path):
+        raise Exception('No model file %s or weights file %s' % (model_path, weight_path))
+
+    fin = open(model_path, 'rb')
     param_dic = pickle.load(fin)
     fin.close()
 
@@ -57,10 +57,10 @@ def test_joint(data_path, method="test"):
     max_step = None
 
     if method == "test":
-        new_chars = joint_data_transform.get_new_chars(data_path + '/data/' + test_file, char2idx)
+        new_chars = joint_data_transform.get_new_chars(data_path + '/' + test_file, char2idx)
         char2idx, idx2char = joint_data_transform.update_char_dict(char2idx, new_chars)
-        test_x, test_y, test_max_slen_c, test_max_slen_w, test_max_wlen, _ =\
-            joint_data_transform.get_input_vec(data_path, test_file,char2idx, tag2idx,tag_scheme=tag_scheme)
+        test_x, test_y, test_max_slen_c, test_max_slen_w, test_max_wlen =\
+            joint_data_transform.get_input_vec(data_path, test_file, char2idx, tag2idx, tag_scheme=tag_scheme)
         print('Test set: %d instances.' % len(test_x[0]))
 
         max_step = test_max_slen_c
@@ -115,7 +115,7 @@ def test_joint(data_path, method="test"):
                                  ng_emb_path=ng_emb_path, gram2idx=gram2idx)
             init = tf.global_variables_initializer()
 
-            print('Done. Time consumed: %d seconds' % int(time() - t))
+            print('Done. Time consumed: %d seconds' % int(time.time() - t))
 
         main_graph.finalize()
         main_sess = tf.Session(config=configProto, graph=main_graph)
@@ -131,10 +131,9 @@ def test_joint(data_path, method="test"):
             sess = [main_sess]
 
         with tf.device("/cpu:0"):
-            ens_model = None
             print('Loading weights....')
             main_sess.run(init)
-            model.run_updates(main_sess, weight_path + '_weights')
+            model.run_updates(main_sess, weight_path)
 
             if method == 'test':
                 model.test(sess=sess, t_x=test_x, t_y=test_y, idx2tag=idx2tag, idx2char=idx2char,
@@ -184,3 +183,8 @@ def test_joint(data_path, method="test"):
                             for l_out in out:
                                 l_writer.write(l_out + '\n')
                     l_writer.close()
+
+if __name__ == "__main__":
+    data_path = os.path.join(pkg_path, "data/joint")
+    #test_joint(data_path, "test")
+    test_joint(data_path, "tag")
