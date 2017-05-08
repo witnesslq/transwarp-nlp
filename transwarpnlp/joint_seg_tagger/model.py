@@ -45,7 +45,7 @@ class Model(object):
         if self.crf > 0:
             self.transition_char = []
             for i in range(len(self.nums_tags)):
-                self.transition_char.append(
+                self.transition_char.append(  # 转移矩阵
                     tf.get_variable('transitions_char' + str(i), [self.nums_tags[i] + 1, self.nums_tags[i] + 1]))
 
         while len(self.buckets_char) > len(self.counts):
@@ -54,7 +54,7 @@ class Model(object):
         self.real_batches = joint_data_transform.get_real_batch(self.counts, self.batch_size)
 
     def model_graph(self, trained_model, scope, emb_dim, gru, rnn_dim, rnn_num, drop_out=0.5,
-                    emb=None, ng_embs=None, con_width=None, filters=None, pooling_size=None):
+                    emb=None, ng_embs=None):
         if trained_model is not None:
             param_dic = {}
             param_dic['nums_chars'] = self.nums_chars
@@ -67,9 +67,6 @@ class Model(object):
             param_dic['rnn_dim'] = rnn_dim
             param_dic['rnn_num'] = rnn_num
             param_dic['drop_out'] = drop_out
-            param_dic['filter_size'] = con_width
-            param_dic['filters'] = filters
-            param_dic['pooling_size'] = pooling_size
             param_dic['buckets_char'] = self.buckets_char
             param_dic['ngram'] = self.ngram
             # print param_dic
@@ -150,7 +147,7 @@ class Model(object):
         self.params = tf.trainable_variables()
         self.saver = tf.train.Saver()
 
-    def config(self, scope, optimizer, decay, lr_v=None, momentum=None, clipping=False, max_gradient_norm=5.0):
+    def config(self, optimizer, decay, lr_v=None, momentum=None, clipping=False, max_gradient_norm=5.0):
         self.decay = decay
         print('Training preparation...')
 
@@ -192,13 +189,14 @@ class Model(object):
         for idx, l in enumerate(loss):
 
             t2 = time.time()
-            if clipping:
-                gradients = tf.gradients(l, self.params)
-                clipped_gradients, norm = tf.clip_by_global_norm(gradients, max_gradient_norm)
-                train_step = optimizer.apply_gradients(zip(clipped_gradients, self.params))
-            else:
-                with tf.variable_scope(tf.get_variable_scope(), reuse=False):
+            with tf.variable_scope(tf.get_variable_scope(), reuse=False):
+                if clipping:
+                    gradients = tf.gradients(l, self.params)
+                    clipped_gradients, norm = tf.clip_by_global_norm(gradients, max_gradient_norm)
+                    train_step = optimizer.apply_gradients(zip(clipped_gradients, self.params))
+                else:
                     train_step = optimizer.minimize(l)
+
             print('Bucket %d, %f seconds' % (idx + 1, time.time() - t2))
             self.train_step.append(train_step)
 

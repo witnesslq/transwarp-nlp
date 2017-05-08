@@ -217,7 +217,7 @@ def get_dic(chars, tags):
 
     #0.seg BIES  1. BI; 2. BIE; 3. BIES
     seg_tags2index = {'<P>':0, 'B': 1, 'I': 2, 'E': 3, 'S': 4}
-    tag2index = {'seg': seg_tags2index, 'BI': get_comb_tags(tags, 'BI'), 'BIE': get_comb_tags(tags, 'BIE'),
+    tag2index = {'seg': seg_tags2index,
                  'BIES': get_comb_tags(tags, 'BIES')}
     index2tag = {}
     for dic_keys in tag2index:
@@ -261,8 +261,6 @@ def get_input_vec(path, fname, char2index, tag2index, tag_scheme='BIES'):
                 if w_len == 1:
                     charIndices.append(char2index[splits[0]])
                     tagIndices['seg'].append(tag2index['seg']['S'])
-                    tagIndices['BI'].append(tag2index['BI']['B-' + splits[1]])
-                    tagIndices['BIE'].append(tag2index['BIE']['B-' + splits[1]])
                     tagIndices['BIES'].append(tag2index['BIES']['S-' + splits[1]])
                 else:
                     for x in range(w_len):
@@ -270,18 +268,12 @@ def get_input_vec(path, fname, char2index, tag2index, tag_scheme='BIES'):
                         charIndices.append(char2index[c_ch])
                         if x == 0:
                             tagIndices['seg'].append(tag2index['seg']['B'])
-                            tagIndices['BI'].append(tag2index['BI']['B-' + splits[1]])
-                            tagIndices['BIE'].append(tag2index['BIE']['B-' + splits[1]])
                             tagIndices['BIES'].append(tag2index['BIES']['B-' + splits[1]])
                         elif x == len(splits[0]) - 1:
                             tagIndices['seg'].append(tag2index['seg']['E'])
-                            tagIndices['BI'].append(tag2index['BI']['I-' + splits[1]])
-                            tagIndices['BIE'].append(tag2index['BIE']['E-' + splits[1]])
                             tagIndices['BIES'].append(tag2index['BIES']['E-' + splits[1]])
                         else:
                             tagIndices['seg'].append(tag2index['seg']['I'])
-                            tagIndices['BI'].append(tag2index['BI']['I-' + splits[1]])
-                            tagIndices['BIE'].append(tag2index['BIE']['I-' + splits[1]])
                             tagIndices['BIES'].append(tag2index['BIES']['I-' + splits[1]])
 
             if t_len > max_sent_len_c:
@@ -441,7 +433,7 @@ def merge_bucket(x):
 def get_nums_tags(tag2idx, tag_scheme):
     nums_tags = [len(tag2idx[tag_scheme])]
     return nums_tags
-
+# 获取batch
 def get_real_batch(counts, b_size):
     real_batch_sizes = []
     for c in counts:

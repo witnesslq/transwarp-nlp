@@ -82,12 +82,12 @@ def train_joint(data_path):
             model = Model(nums_chars=len(chars) + 2, nums_tags=nums_tags, buckets_char=b_buckets,
                           counts=b_counts, tag_scheme=config.tag_scheme, word_vec=config.word_vector,
                           crf=config.crf, ngram=nums_grams, batch_size=config.train_batch)
+
             model.model_graph(trained_model=data_path + '/model/trained_model', scope=scope, emb_dim=emb_dim,
                               gru=config.gru, rnn_dim=config.rnn_cell_dimension, rnn_num=config.rnn_layer_number,
-                              emb=emb, ng_embs=ng_embs, drop_out=config.dropout_rate,con_width=config.filter_size,
-                              filters=config.filters_number, pooling_size=config.max_pooling)
+                              emb=emb, ng_embs=ng_embs, drop_out=config.dropout_rate)
             t = time.time()
-            model.config(scope=scope, optimizer=config.optimizer, decay=config.decay_rate, lr_v=config.learning_rate,
+            model.config(optimizer=config.optimizer, decay=config.decay_rate, lr_v=config.learning_rate,
                          momentum=config.momentum, clipping=config.clipping)
             init = tf.global_variables_initializer()
 
