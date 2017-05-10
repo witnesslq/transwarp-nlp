@@ -26,7 +26,7 @@
 * numpy
 * pandas
 * matplotlib
-* pygtrie
+* sklearn
 * future
 * cPickle
 
