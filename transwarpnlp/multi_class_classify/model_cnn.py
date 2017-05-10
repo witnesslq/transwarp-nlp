@@ -43,10 +43,10 @@ def generate_batch(revs, word_idx_map, minibatch_index):
     labels = np.ndarray(shape=batch_size, dtype=np.int64)
 
     for i in range(batch_size):
-        sentece = minibatch_data[i]["text"]
+        sentence = minibatch_data[i]["text"]
         label = minibatch_data[i]["y"]
         labels[i] = label
-        batch = get_idx_from_sent(sentece, word_idx_map, sentence_length)
+        batch = get_idx_from_sent(sentence, word_idx_map, sentence_length)
         batchs[i] = batch
     return batchs, labels
 
