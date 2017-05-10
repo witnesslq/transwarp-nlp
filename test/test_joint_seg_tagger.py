@@ -107,12 +107,13 @@ def test_joint(data_path, method="test"):
         with tf.variable_scope("tagger") as scope:
             model = Model(nums_chars=nums_chars, nums_tags=nums_tags, buckets_char=[max_step], counts=[200], tag_scheme=tag_scheme, word_vec=word_vector,
                           crf=crf, ngram=num_ngram, batch_size=config.tag_batch)
+
             model.model_graph(trained_model=None, scope=scope, emb_dim=emb_dim, gru=gru, rnn_dim=rnn_dim,
-                             rnn_num=rnn_num, drop_out=drop_out,  con_width=con_width, filters=cv_kernels,
-                             pooling_size=pooling_size)
+                             rnn_num=rnn_num, drop_out=drop_out)
 
             model.define_updates(new_chars=new_chars, emb_path=emb_path, char2idx=char2idx, new_grams=new_grams,
                                  ng_emb_path=ng_emb_path, gram2idx=gram2idx)
+
             init = tf.global_variables_initializer()
 
             print('Done. Time consumed: %d seconds' % int(time.time() - t))
