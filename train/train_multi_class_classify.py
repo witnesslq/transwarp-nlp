@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 import os, time
 from transwarpnlp.multi_class_classify.cnn_config import CnnConfig
-from transwarpnlp.multi_class_classify import cnn_classfier
+from transwarpnlp.multi_class_classify import model_cnn
 
 config = CnnConfig()
 pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -13,7 +13,7 @@ pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def train_cnn_classfier(train_path):
     print("loading data...")
-    x = cPickle.load(open(os.path.join(train_path, "data/mr.txt"), "rb"))
+    x = cPickle.load(open(os.path.join(train_path, "model/mr.txt"), "rb"))
     # 读取出预处理后的数据 revs {"y":label,"text":"word1 word2 ..."}
     #                          word_idx_map["word"]==>index
     #                        vocab["word"]==>frequency
@@ -26,16 +26,16 @@ def train_cnn_classfier(train_path):
     # 开始定义模型============================================
     with tf.Graph().as_default(), tf.Session().as_default() as sess:
         # 占位符 真实的输入输出
-        x_in = tf.placeholder(tf.int32, shape=[None, config.sentence_length], name="input_x")
-        y_in = tf.placeholder(tf.float32, [None, 2], name="input_y")  # 2分类问题
+        x_in = tf.placeholder(tf.int64, shape=[None, config.sentence_length], name="input_x")
+        y_in = tf.placeholder(tf.int64, [None], name="input_y")
         keep_prob = tf.placeholder(tf.float32)
 
         # 构建模型
-        loss, accuracy, embeddings = cnn_classfier.build_model(x_in, y_in, keep_prob)
+        loss, accuracy, embeddings = model_cnn.build_model(x_in, y_in, keep_prob)
 
         # 训练模型========================================
 
-        num_steps = 1000
+        num_steps = 10
 
         global_step = tf.Variable(0)
         learning_rate = tf.train.exponential_decay(1e-4, global_step, num_steps, 0.99, staircase=True)  # 学习率递减
@@ -72,11 +72,11 @@ def train_cnn_classfier(train_path):
         else:
             num_steps = 0
 
-        batch_x_test, batch_y_test = cnn_classfier.get_test_batch(revs, word_idx_map)
+        batch_x_test, batch_y_test = model_cnn.get_test_batch(revs, word_idx_map)
 
         for i in range(num_steps):
             for minibatch_index in np.random.permutation(range(n_train_batches)):  # 随机打散 每次输入的样本的顺序都不一样
-                batch_x, batch_y = cnn_classfier.generate_batch(revs, word_idx_map, minibatch_index)
+                batch_x, batch_y = model_cnn.generate_batch(revs, word_idx_map, minibatch_index)
                 # train_step.run(feed_dict={x_in: batch_x, y_in: batch_y, keep_prob: 0.5})
                 feed_dict = {x_in: batch_x, y_in: batch_y, keep_prob: 0.5}
                 _, step, summaries = sess.run([train_step, global_step, train_summary_op], feed_dict)
@@ -91,7 +91,7 @@ def train_cnn_classfier(train_path):
 
 
 if __name__ == "__main__":
-    train_path = os.path.join(pkg_path, "data/textclassify")
+    train_path = os.path.join(pkg_path, "data/multi_class_classify")
     embeddings, sess, idx_word_map = train_cnn_classfier(train_path)
-    final_embeddings = cnn_classfier.word2vec(embeddings, train_path, sess)
+    final_embeddings = model_cnn.word2vec(embeddings, train_path, sess)
     # cnn_classfier.display_word2vec(final_embeddings, idx_word_map)
