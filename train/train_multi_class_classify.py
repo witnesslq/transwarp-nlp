@@ -4,14 +4,14 @@ import cPickle
 import numpy as np
 import tensorflow as tf
 import os, time
-from transwarpnlp.textclassify.cnn_config import CnnConfig
-from transwarpnlp.textclassify import cnn_classfier
+from transwarpnlp.multi_class_classify.cnn_config import CnnConfig
+from transwarpnlp.multi_class_classify import cnn_classfier
 
 config = CnnConfig()
 pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def train_classfier(train_path):
+def train_cnn_classfier(train_path):
     print("loading data...")
     x = cPickle.load(open(os.path.join(train_path, "data/mr.txt"), "rb"))
     # 读取出预处理后的数据 revs {"y":label,"text":"word1 word2 ..."}
@@ -92,6 +92,6 @@ def train_classfier(train_path):
 
 if __name__ == "__main__":
     train_path = os.path.join(pkg_path, "data/textclassify")
-    embeddings, sess, idx_word_map = train_classfier(train_path)
+    embeddings, sess, idx_word_map = train_cnn_classfier(train_path)
     final_embeddings = cnn_classfier.word2vec(embeddings, train_path, sess)
     # cnn_classfier.display_word2vec(final_embeddings, idx_word_map)

@@ -4,7 +4,7 @@ import cPickle
 import numpy as np
 import warnings
 import tensorflow as tf
-from transwarpnlp.textclassify.cnn_config import CnnConfig
+from transwarpnlp.multi_class_classify.cnn_config import CnnConfig
 from matplotlib import pylab
 pylab.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
 pylab.rcParams['axes.unicode_minus']=False #用来正常显示负号
@@ -29,7 +29,7 @@ def get_idx_from_sent(sent, word_idx_map, max_l):
     for word in words:
         if word in word_idx_map:
             x.append(word_idx_map[word])
-    while len(x) < max_l:
+    while len(x) < max_l:  # 长度不够的，补充0
         x.append(0)
     # 一个训练的一个输入 形式为[0,0,0,0,x11,x12,,,,0,0,0] 向量长度为max_l+2*filter_h-2
     return x
