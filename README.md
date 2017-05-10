@@ -38,15 +38,17 @@
 * [Memory Network](https://arxiv.org/pdf/1410.3916.pdf) `paper`
 * [Sequence-to-Sequence with Attention Model for Text Summarization.](https://github.com/tensorflow/models/tree/master/textsum) `code`
 * https://github.com/tensorflow/models/tree/master/tutorials/rnn/ptb  `code`
+* https://github.com/koth/kcws `code`
+* https://github.com/google/seq2seq
 * https://github.com/tensorflow/models/tree/master/textsum `code`
-* https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py `code`
 * https://github.com/qhduan/Seq2Seq_Chatbot_QA `code`
 * https://github.com/jinfagang/tensorflow_poems `code`
 * https://github.com/ganeshjawahar/mem_absa `code`
-* https://github.com/koth/kcws `code`
+* https://github.com/yanshao9798/tagger `code`
 * https://github.com/rockingdingo/deepnlp `code`
+* https://github.com/luchi007/RNN_Text_Classify
 * https://github.com/LambdaWx/CNN_sentence_tensorflow `code`
 
 ## LICENSE
 
-MIT
+All code in this repository is under the MIT license as specified by the [LICENSE](LICENSE) file.
