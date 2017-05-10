@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import cPickle
 import numpy as np
 import warnings
 import tensorflow as tf
-from transwarpnlp.multi_class_classify.cnn_config import CnnConfig
-from matplotlib import pylab
-pylab.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
-pylab.rcParams['axes.unicode_minus']=False #用来正常显示负号
-from sklearn.manifold import TSNE
-import os
+from transwarpnlp.multi_label_classify.cnn_config import CnnConfig
 
 warnings.filterwarnings("ignore")
 
@@ -26,8 +20,8 @@ def get_idx_from_sent(sent, word_idx_map, max_l):
     """
     x = []
     words = sent.split()
-    for word in words:
-        if word in word_idx_map:
+    for i, word in enumerate(words):
+        if word in word_idx_map and i < max_l:
             x.append(word_idx_map[word])
     while len(x) < max_l:  # 长度不够的，补充0
         x.append(0)
@@ -44,11 +38,16 @@ def generate_batch(revs, word_idx_map, minibatch_index, class_num):
 
     for i in range(batch_size):
         sentece = minibatch_data[i]["text"]
-        label = minibatch_data[i]["y"]
-        if label == 1:
-            labels[i] = [0, 1]  #
-        else:
-            labels[i] = [1, 0]  #
+        label_ids = minibatch_data[i]["y"].split(",")
+
+        label = []
+        for j in range(class_num):
+            if int(j) in label_ids:
+                label.append(1)
+            else:
+                label.append(0)
+
+        labels[i] = label
         batch = get_idx_from_sent(sentece, word_idx_map, sentence_length)
         batchs[i] = batch
     return batchs, labels
@@ -65,11 +64,17 @@ def get_test_batch(revs, word_idx_map, class_num, cv=1):
     labels = np.ndarray(shape=[test_szie, class_num], dtype=np.int64)
     for i in range(test_szie):
         sentence = minibatch_data[i]["text"]
-        label = minibatch_data[i]["y"]
-        if label == 1:
-            labels[i] = [0, 1]  #
-        else:
-            labels[i] = [1, 0]  #
+        label_ids = minibatch_data[i]["y"].split(",")
+
+        label = []
+        for j in range(class_num):
+            if str(j) in label_ids:
+                label.append(1)
+            else:
+                label.append(0)
+
+        labels[i] = label
+
         batch = get_idx_from_sent(sentence, word_idx_map, sentence_length)
         batchs[i] = batch
 
@@ -120,15 +125,18 @@ def build_model(x_in, y_in, keep_prob):
     h_drop = tf.nn.dropout(h_pool_flat, keep_prob)
 
 
-    W = tf.Variable(tf.truncated_normal([num_filters_total, 2], stddev=0.1))
-    b = tf.Variable(tf.constant(0.1, shape=[2]), name="b")
+    W = tf.Variable(tf.truncated_normal([num_filters_total, config.class_num], stddev=0.1))
+    b = tf.Variable(tf.constant(0.1, shape=[config.class_num]), name="b")
     l2_loss = tf.nn.l2_loss(W) + tf.nn.l2_loss(b)
 
     scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")  # wx+b
     losses = tf.nn.sigmoid_cross_entropy_with_logits(logits=scores, labels=y_in)
     loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
 
-    correct_prediction = tf.equal(tf.argmax(scores, 1), y_in)
+    correct_prediction = tf.equal(tf.round(tf.nn.sigmoid(scores)), tf.round(y_in))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+    # correct_prediction = tf.equal(tf.argmax(scores, 1), y_in)
+    # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     return loss, accuracy, embeddings

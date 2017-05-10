@@ -187,10 +187,10 @@ def createTrainData(data_folder, result_path):
 
 
 if __name__ == "__main__":
-    # source_file = os.path.join(pkg_path, "data/source/news.txt")
-    # dest_file = os.path.join(pkg_path, "data/multi_label_classify/data/news.txt")
-    # tag_file = os.path.join(pkg_path, "data/multi_label_classify/model/tagids.txt")
-    # clearData(source_file, dest_file, tag_file)
+    source_file = os.path.join(pkg_path, "data/source/news.txt")
+    dest_file = os.path.join(pkg_path, "data/multi_label_classify/data/news.txt")
+    tag_file = os.path.join(pkg_path, "data/multi_label_classify/model/tagids.txt")
+    clearData(source_file, dest_file, tag_file)
 
     data_folder = os.path.join(pkg_path, "data/multi_label_classify/data/news.txt")
     result_path = os.path.join(pkg_path, "data/multi_label_classify/model/mr.txt")
