@@ -19,120 +19,29 @@ vector_size = 50
     revs：原始文本，文本中单词个数，所属cv值
     vocab：单词表（包括词和词频）
 """
-def build_data_cv(data_folder, cv=10, clean_string=True):
-    """
-    二分类数据预处理
-    """
+def build_data(data_folder, cv=10, clean_string=False):
     revs = []
-    pos_file = data_folder[0]
-    neg_file = data_folder[1]
     vocab = defaultdict(float)
-
-    with open(pos_file, "rb") as f:
-        for line in f:
-            if len(line) < 15:
-                continue
-            rev = []
-            rev.append(line.strip())
-            # print rev
-            if clean_string:
-                orig_rev = clean_str(" ".join(rev))
-            else:
-                orig_rev = " ".join(rev).lower()
-            words = set(orig_rev.split())
-            for word in words:
-                vocab[word] += 1
-            # lable [0,1,2..]的一个值
-            datum = {"y": 1,  # lable
-                     "text": orig_rev,  # 原始文本
-                     "num_words": len(orig_rev.split()),  # 该段文本的单词数量
-                     "split": np.random.randint(0, cv)}  # 具体的CV值
-            revs.append(datum)
-
-    with open(neg_file, "rb") as f:
-        for line in f:
-            if len(line) < 15:
-                continue
-            rev = []
-            rev.append(line.strip())
-            if clean_string:
-                orig_rev = clean_str(" ".join(rev))
-            else:
-                orig_rev = " ".join(rev).lower()
-            words = set(orig_rev.split())
-            for word in words:
-                vocab[word] += 1
-            datum = {"y": 0,  # 类别值
-                     "text": orig_rev,
-                     "num_words": len(orig_rev.split()),
-                     "split": np.random.randint(0, cv)}
-            revs.append(datum)
-
+    for label, cfile in enumerate(os.listdir(data_folder)):
+        file = os.path.join(data_folder, cfile)
+        with open(file, "rb") as f:
+            for line in f:
+                if line != '\n':
+                    rev = []
+                    rev.append(line.strip())
+                    if clean_string:
+                        orig_rev = clean_str(" ".join(rev))
+                    else:
+                        orig_rev = " ".join(rev).lower()
+                    words = set(orig_rev.split())
+                    for word in words:
+                        vocab[word] += 1
+                    datum = {"y": label,
+                             "text": orig_rev,
+                             "num_words": len(orig_rev.split()),
+                             "split": np.random.randint(0, cv)}
+                    revs.append(datum)
     return revs, vocab
-
-
-def build_data_cv_multi(data_folder, cv=10, clean_string=False):
-    """
-    多分类数据预处理
-    """
-    revs = []
-    alt_atheism = data_folder[0]
-    vocab = defaultdict(float)
-    with open(alt_atheism, "rb") as f:
-        for line in f:
-            rev = []
-            rev.append(line.strip())
-            if clean_string:
-                orig_rev = clean_str(" ".join(rev))
-            else:
-                orig_rev = " ".join(rev).lower()
-            words = set(orig_rev.split())
-            for word in words:
-                vocab[word] += 1
-
-            datum = {"y": 0,  # 类别值
-                     "text": orig_rev,
-                     "num_words": len(orig_rev.split()),
-                     "split": np.random.randint(0, cv)}
-            revs.append(datum)
-
-    comp_graphics = data_folder[1]
-    with open(comp_graphics, "rb") as f:
-        for line in f:
-            rev = []
-            rev.append(line.strip())
-            if clean_string:
-                orig_rev = clean_str(" ".join(rev))
-            else:
-                orig_rev = " ".join(rev).lower()
-            words = set(orig_rev.split())
-            for word in words:
-                vocab[word] += 1
-            datum = {"y": 1,
-                     "text": orig_rev,
-                     "num_words": len(orig_rev.split()),
-                     "split": np.random.randint(0, cv)}
-            revs.append(datum)
-
-    comp_os_ms_windows = data_folder[2]
-    with open(comp_os_ms_windows, "rb") as f:
-        for line in f:
-            rev = []
-            rev.append(line.strip())
-            if clean_string:
-                orig_rev = clean_str(" ".join(rev))
-            else:
-                orig_rev = " ".join(rev).lower()
-            words = set(orig_rev.split())
-            for word in words:
-                vocab[word] += 1
-            datum = {"y": 2,
-                     "text": orig_rev,
-                     "num_words": len(orig_rev.split()),
-                     "split": np.random.randint(0, cv)}
-            revs.append(datum)
-    return revs, vocab
-
 
 def get_W(word_vecs, k=vector_size):
     """
@@ -222,11 +131,12 @@ def clean_str_sst(string):
 if __name__ == "__main__":
     w2v_file = ""
 
-    data_folder = [os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/C000008.txt"),
-                   os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/C000010.txt")]
+    # data_folder = [os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/C000008.txt"),
+    #                os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/C000010.txt")]
 
+    data_folder = os.path.join(os.path.dirname(pkg_path), "data/multi_class_classify/data")
     print("loading data...")
-    revs, vocab = build_data_cv(data_folder, cv=10, clean_string=True)
+    revs, vocab = build_data(data_folder, cv=10, clean_string=True)
     max_l = np.max(pd.DataFrame(revs)["num_words"])
     print("data loaded!")
     print("number of sentences: " + str(len(revs)))
@@ -241,6 +151,6 @@ if __name__ == "__main__":
     rand_vecs = {}
     add_unknown_words(rand_vecs, vocab)  # 得到一个{word:word_vec}词典
     W2, _, _ = get_W(rand_vecs)  # 构建一个随机初始化的W2词向量矩阵
-    result_path = os.path.join(os.path.dirname(pkg_path), "data/textclassify/data/mr.txt")
+    result_path = os.path.join(os.path.dirname(pkg_path), "data/multi_class_classify/model/mr.txt")
     cPickle.dump([revs, W, W2, word_idx_map, idx_word_map, vocab], open(result_path, "wb"))
     print("train data created!")

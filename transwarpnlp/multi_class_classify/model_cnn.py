@@ -39,16 +39,13 @@ def generate_batch(revs, word_idx_map, minibatch_index):
     batch_size = config.batch_size
     sentence_length = config.sentence_length
     minibatch_data = revs[minibatch_index * batch_size:(minibatch_index + 1) * batch_size]
-    batchs = np.ndarray(shape=(batch_size, sentence_length), dtype=np.int32)
-    labels = np.ndarray(shape=(batch_size, 2), dtype=np.int32)
+    batchs = np.ndarray(shape=(batch_size, sentence_length), dtype=np.int64)
+    labels = np.ndarray(shape=batch_size, dtype=np.int64)
 
     for i in range(batch_size):
         sentece = minibatch_data[i]["text"]
-        lable = minibatch_data[i]["y"]
-        if lable == 1:
-            labels[i] = [0, 1]  #
-        else:
-            labels[i] = [1, 0]  #
+        label = minibatch_data[i]["y"]
+        labels[i] = label
         batch = get_idx_from_sent(sentece, word_idx_map, sentence_length)
         batchs[i] = batch
     return batchs, labels
@@ -62,15 +59,13 @@ def get_test_batch(revs, word_idx_map, cv=1):
             test.append(rev)
     minibatch_data = test
     test_szie = len(minibatch_data)
-    batchs = np.ndarray(shape=(test_szie, sentence_length), dtype=np.int32)
-    labels = np.ndarray(shape=(test_szie, 2), dtype=np.int32)
+    batchs = np.ndarray(shape=(test_szie, sentence_length), dtype=np.int64)
+    labels = np.ndarray(shape=[test_szie], dtype=np.int64)
     for i in range(test_szie):
         sentece = minibatch_data[i]["text"]
-        lable = minibatch_data[i]["y"]
-        if lable == 1:
-            labels[i] = [0, 1]
-        else:
-            labels[i] = [1, 0]
+        label = minibatch_data[i]["y"]
+
+        labels[i] = label
         batch = get_idx_from_sent(sentece, word_idx_map, sentence_length)
         batchs[i] = batch
 
@@ -128,10 +123,10 @@ def build_model(x_in, y_in, keep_prob):
     l2_loss = tf.nn.l2_loss(W) + tf.nn.l2_loss(b)
 
     scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")  # wx+b
-    losses = tf.nn.softmax_cross_entropy_with_logits(logits=scores, labels=y_in)
+    losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=scores, labels=y_in)
     loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
 
-    correct_prediction = tf.equal(tf.argmax(scores, 1), tf.argmax(y_in, 1))
+    correct_prediction = tf.equal(tf.argmax(scores, 1), y_in)
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     return loss, accuracy, embeddings
