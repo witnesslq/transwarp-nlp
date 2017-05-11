@@ -32,11 +32,11 @@
 
 ## 参考资料
 
+* [A Neural Attention Model for Abstractive Sentence Summarization](https://arxiv.org/abs/1509.00685) `paper`
 * [Aspect Level Sentiment Classification with Deep Memory Network](https://arxiv.org/abs/1605.08900) `paper`
 * [Bidirectional LSTM-CRF Models for Sequence Tagging](https://arxiv.org/abs/1508.01991) `paper`
 * [Convolutional Neural Networks for Sentence Classification](https://arxiv.org/abs/1408.5882) `paper`
 * [Memory Network](https://arxiv.org/pdf/1410.3916.pdf) `paper`
-* [Sequence-to-Sequence with Attention Model for Text Summarization.](https://github.com/tensorflow/models/tree/master/textsum) `code`
 * https://github.com/tensorflow/models/tree/master/tutorials/rnn/ptb  `code`
 * https://github.com/koth/kcws `code`
 * https://github.com/google/seq2seq
