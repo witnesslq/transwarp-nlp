@@ -109,14 +109,14 @@ def trainSeq2Seq(data_path):
 
         dev_set = read_data(src_dev, dest_dev)
         train_set = read_data(src_train, dest_train, FLAGS.max_train_data_size)
-        train_bucket_sizes = [len(train_set[b]) for b in xrange(len(config.buckets))]
+        train_bucket_sizes = [len(train_set[b]) for b in range(len(config.buckets))]
         train_total_size = float(sum(train_bucket_sizes))
 
         # A bucket scale is a list of increasing numbers from 0 to 1 that we'll use
         # to select a bucket. Length of [scale[i], scale[i+1]] is proportional to
         # the size if i-th training bucket, as used later.
         train_buckets_scale = [sum(train_bucket_sizes[:i + 1]) / train_total_size
-                              for i in xrange(len(train_bucket_sizes))]
+                              for i in range(len(train_bucket_sizes))]
 
         # This is the training loop.
         step_time, loss = 0.0, 0.0
@@ -127,7 +127,7 @@ def trainSeq2Seq(data_path):
             # Choose a bucket according to data distribution. We pick a random number
             # in [0, 1] and use the corresponding interval in train_buckets_scale.
             random_number_01 = np.random.random_sample()
-            bucket_id = min([i for i in xrange(len(train_buckets_scale))
+            bucket_id = min([i for i in range(len(train_buckets_scale))
                              if train_buckets_scale[i] > random_number_01])
 
             # Get a batch and make a step.
@@ -156,7 +156,7 @@ def trainSeq2Seq(data_path):
                 model.saver.save(sess, checkpoint_path, global_step=model.global_step)
                 step_time, loss = 0.0, 0.0
                 # Run evals on development set and print their perplexity.
-                for bucket_id in xrange(len(config.buckets)):
+                for bucket_id in range(len(config.buckets)):
                     if len(dev_set[bucket_id]) == 0:
                         print("  eval: empty bucket %d" % (bucket_id))
                         continue
